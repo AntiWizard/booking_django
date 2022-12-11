@@ -37,8 +37,8 @@ class CustomUserManager(UserManager):
 
 class User(AbstractUser):
     class Gender(models.TextChoices):
-        MALE = "male"
-        FEMALE = "female"
+        MALE = "MALE"
+        FEMALE = "FEMALE"
 
     class Nationality(models.TextChoices):
         IRAN = "IR"
@@ -52,13 +52,19 @@ class User(AbstractUser):
     phone = models.CharField(validators=[phone_regex], max_length=16, unique=True)
     birth_day = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=Gender.choices, null=True, blank=True)
+    nationality = models.CharField(max_length=40, choices=Nationality.choices, null=True, blank=True)
     avatar = models.ImageField(upload_to='users/avatars/', null=True, blank=True)
-    nationality = models.CharField(max_length=40, choices=Nationality.choices, default=Nationality.IRAN)
+    is_valid = models.BooleanField(default=True)
+    created_time = models.DateTimeField(auto_now_add=True)
+    modified_time = models.DateTimeField(auto_now=True)
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = "phone"
     REQUIRED_FIELDS = []
+
+    def __str__(self):
+        return self.phone
 
 
 class Address(models.Model):
@@ -67,6 +73,9 @@ class Address(models.Model):
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     country = models.CharField(max_length=50, choices=Country.choices)
-    zip_code = models.BigIntegerField(validators=[MaxValueValidator(10)], unique=True)
+    zip_code = models.BigIntegerField(unique=True)  # TODO check validator
     city = models.CharField(max_length=100, null=True)
     address = models.TextField()
+
+    def __str__(self):
+        return self.user.phone + ": " + self.country
