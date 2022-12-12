@@ -1,12 +1,12 @@
 from rest_framework import generics
-# Create your views here.
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
 from users.models import User
 from users.permissions import IsOwner, IsAnonymous
 from users.serializers import UserSerializer, CreateUserSerializer
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class ListUserAPIView(generics.ListAPIView):
@@ -14,6 +14,7 @@ class ListUserAPIView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAdminUser]
     pagination_class = LimitOffsetPagination
+    authentication_classes = [JWTAuthentication]
 
 
 class DetailUserAPIView(generics.ListAPIView):
