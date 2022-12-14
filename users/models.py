@@ -1,9 +1,8 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import PermissionsMixin, AbstractUser, UserManager
-from django.core.validators import MaxValueValidator, RegexValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
-
-from booking import settings
 
 
 class CustomUserManager(UserManager):
@@ -33,6 +32,28 @@ class CustomUserManager(UserManager):
             raise ValueError("Superuser must have is_superuser=True.")
 
         return self._create_user(phone, email, password, **extra_fields)
+
+
+def validation_address_phone(value):
+    if value:
+        if not User.objects.filter(phone=value).exists():
+            raise ValidationError(
+                'User with %(value)s not exist',
+                params={'value', value},
+            )
+        if not Address.objects.filter(phone=value).exists():
+            raise ValidationError(
+                'Address for %(value)s not exist',
+                params={'value', value},
+            )
+
+
+def validation_zip_code(value):
+    if not len(str(value)) in [4, 5, 10]:
+        raise ValidationError(
+            "%(value)s is invalid"
+            , params={"value": value}
+        )
 
 
 class User(AbstractUser):
@@ -66,16 +87,29 @@ class User(AbstractUser):
     def __str__(self):
         return self.phone
 
+    def save(self, *args, **kwargs):
+        address = Address.objects.filter(phone=self.phone)
+        if not address.exists():
+            address.create(phone=self.phone)
+        super().save(*args, **kwargs)
+
 
 class Address(models.Model):
     class Country(models.TextChoices):
-        IRAN = "IRAN"
+        IRAN = "IR"
+        UNITED_KINGDOM = "UK"
 
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    phone_regex = RegexValidator(regex=r'^[1-9][0-9]{8,14}$',
+                                 message="Phone number must not consist of space and requires country code. eg : "
+                                         "989210000000")
+    phone = models.CharField(validators=[phone_regex], max_length=16, unique=True)
     country = models.CharField(max_length=50, choices=Country.choices)
-    zip_code = models.BigIntegerField(unique=True)  # TODO check validator
-    city = models.CharField(max_length=100, null=True)
-    address = models.TextField()
+    zip_code = models.BigIntegerField(validators=[validation_zip_code], blank=True, null=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    address = models.TextField(blank=True, null=True)
+    is_valid = models.BooleanField(default=True)
+    created_time = models.DateTimeField(auto_now_add=True)
+    modified_time = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.user.phone + ": " + self.country
+        return self.phone
