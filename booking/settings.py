@@ -38,9 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'rest_framework',
-    'users.apps.UsersConfig',
     'rest_framework_simplejwt',
+    'silk',
+    'drf_spectacular',
+
+    'users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
@@ -87,6 +91,14 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379',
+        'TIMEOUT': None
+    },
+}
+
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
@@ -130,21 +142,35 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {
+
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
         'rest_framework.throttling.ScopedRateThrottle',
     ],
+
     'DEFAULT_THROTTLE_RATES': {
         'anon': '10/min',
         'user': '10/min',
         'create_user': "1/min"
     },
+
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
+
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
 }
+
+SILKY_AUTHENTICATION = True  # User must login
+SILKY_AUTHORISATION = True  # User must have permissions
+SILKY_META = True
+SILKY_INTERCEPT_PERCENT = 100  # log only 50% of requests
+SILKY_ANALYZE_QUERIES = True

@@ -32,7 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         user_email = User.objects.filter(email=validated_data.get('email')).exclude(id=instance.id).exists()
         if user_email:
-            raise ValidationError("This email existed (check again) !!")
+            raise ValidationError("This email existed !!")
         return super(UserSerializer, self).update(instance, validated_data)
 
 
