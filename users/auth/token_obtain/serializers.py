@@ -1,25 +1,18 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, user_login_failed
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import update_last_login
-from django.contrib.auth.signals import user_login_failed
 from django.core.cache import cache
-from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_variables
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
 
 UserModel = get_user_model()
 
 
-class LoginSerializer(serializers.Serializer):
+class TokenAPISerializer(serializers.Serializer):
     username_field = get_user_model().USERNAME_FIELD
     token_class = RefreshToken
-
-    default_error_messages = {
-        "invalid_account": _("invalid_account")
-    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -55,9 +48,11 @@ class LoginSerializer(serializers.Serializer):
     def get_token(cls, user):
         return cls.token_class.for_user(user)
 
+    def update(self, instance, validated_data):
+        pass
 
-class LoginView(TokenObtainPairView):
-    serializer_class = LoginSerializer
+    def create(self, validated_data):
+        pass
 
 
 class BookingBackend(ModelBackend):
@@ -69,9 +64,7 @@ class BookingBackend(ModelBackend):
         try:
             user = UserModel._default_manager.get_by_natural_key(username)
         except UserModel.DoesNotExist:
-            # Run the default password hasher once to reduce the timing
-            # difference between an existing and a nonexistent user (#20760).
-            UserModel().set_password(otp)
+            pass
         else:
             if otp == str(cache.get(username)) and self.user_can_authenticate(user):
                 return user

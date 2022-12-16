@@ -34,17 +34,3 @@ class UserSerializer(serializers.ModelSerializer):
         if user_email:
             raise ValidationError("This email existed !!")
         return super(UserSerializer, self).update(instance, validated_data)
-
-
-class OTPSerializer(serializers.Serializer):
-    otp = serializers.CharField(max_length=5)
-
-
-class LoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('phone',)
-
-    def create(self, validated_data):
-        user = User.objects.create(phone=validated_data.get('phone'))
-        return user

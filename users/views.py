@@ -1,28 +1,21 @@
-import json
-
-import requests as requests
-from django.core.cache import cache
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.decorators import api_view
-from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
+from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from users.models import User, Address
-from users.permissions import IsOwner, IsAnonymous
-from users.serializers import UserSerializer, AddressSerializer, LoginSerializer, OTPSerializer
-from users.tasks import send_sms_to_user
-from utlis.users.otp_generator import otp_generator
+from users.permissions import IsOwner
+from users.serializers import UserSerializer, AddressSerializer
 
 
 @api_view(['GET'])
-def api_root(request, format=None):
+def api_root(request, _format=None):
     return Response({
-        'swagger': reverse('swagger-ui', request=request, format=format),
+        'swagger': reverse('swagger-ui', request=request, format=_format),
     })
 
 
@@ -82,57 +75,3 @@ class DetailAddressAPIView(generics.RetrieveUpdateAPIView):
         if serializer.validated_data.get('city'):
             serializer.validated_data['city'] = serializer.validated_data['city'].title()
         serializer.save()
-
-
-class GenerateOTP(generics.ListAPIView):
-    serializer_class = OTPSerializer
-    throttle_classes = [AnonRateThrottle]
-
-    def list(self, request, *args, **kwargs):
-        if request.data.get('phone'):  # TODO check phone correct logic
-            otp = otp_generator(10000, 99999)
-            code = {"otp": otp}
-            cache.set(request.data['phone'], code["otp"], 60 * 2)
-
-        else:
-            data = {"error": "phone field required"}
-            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer = self.get_serializer(code)
-
-        send_sms_to_user.delay(request.data['phone'], str(otp))
-
-        return Response(serializer.data)
-
-
-class LoginUserAPIView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = LoginSerializer
-    permission_classes = [IsAnonymous]
-    throttle_scope = 'create_user'
-
-    def post(self, request, *args, **kwargs):
-        if request.data.get('phone') and request.data.get('otp'):  # TODO check phone correct logic
-            phone = request.data['phone']
-
-            user_otp = cache.get(phone)
-
-            if str(user_otp) == request.data["otp"]:
-                user = User.objects.filter(phone=phone)
-
-                if not user.exists():
-                    super().post(request, *args, **kwargs)
-
-                response_login = requests.post(
-                    request.build_absolute_uri(reverse('token_obtain')),
-                    data={"phone": request.data['phone'], "otp": request.data["otp"]})
-
-                token = json.loads(response_login.content)
-                return Response(token, response_login.status_code)
-
-            else:
-                raise AuthenticationFailed("{} invalid otp".format(request.data["otp"]))
-
-        else:
-            data = {"error": "phone and otp fields required"}
-            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)

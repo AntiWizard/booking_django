@@ -103,7 +103,7 @@ class Address(models.Model):
                                  message="Phone number must not consist of space and requires country code. eg : "
                                          "989210000000")
     phone = models.CharField(validators=[phone_regex], max_length=16, unique=True)
-    country = models.CharField(max_length=50, choices=Country.choices)
+    country = models.CharField(max_length=50, choices=Country.choices, blank=True, null=True)
     zip_code = models.BigIntegerField(validators=[validation_zip_code], blank=True, null=True)
     city = models.CharField(max_length=100, null=True, blank=True)
     address = models.TextField(blank=True, null=True)
