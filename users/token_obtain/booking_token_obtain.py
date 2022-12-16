@@ -6,8 +6,8 @@ from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_variables
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 UserModel = get_user_model()
@@ -15,7 +15,7 @@ UserModel = get_user_model()
 
 class LoginSerializer(serializers.Serializer):
     username_field = get_user_model().USERNAME_FIELD
-    token_class = AccessToken
+    token_class = RefreshToken
 
     default_error_messages = {
         "invalid_account": _("invalid_account")
@@ -24,6 +24,7 @@ class LoginSerializer(serializers.Serializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.user = None
         self.fields[self.username_field] = serializers.CharField()
         self.fields["otp"] = serializers.CharField()
 
@@ -40,13 +41,11 @@ class LoginSerializer(serializers.Serializer):
         self.user = booking_authenticate(**authenticate_kwargs)
 
         if not self.user:
-            raise ValidationError("invalid_otp",)
+            raise AuthenticationFailed("invalid_otp", )
 
         refresh = self.get_token(self.user)
 
-        data = {}
-
-        data["access"] = str(refresh)
+        data = {"refresh": str(refresh), "access": str(refresh.access_token)}
 
         update_last_login(None, self.user)
 

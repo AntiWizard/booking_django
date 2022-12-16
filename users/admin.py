@@ -7,6 +7,10 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ('id', 'phone', 'is_active', 'is_staff',)
     search_fields = ('phone',)
 
+    def delete_queryset(self, request, queryset):
+        Address.objects.filter(phone__in=[item.phone for item in queryset]).delete()
+        queryset.delete()
+
 
 class AddressAdmin(admin.ModelAdmin):
     list_display = ('id', 'phone',)
