@@ -1,12 +1,12 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from users.models import User, Address
+from users.models import User, UserAddress
 
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Address
+        model = UserAddress
         fields = ('phone', 'country', 'city', 'zip_code', 'address',)
         read_only_fields = ("phone",)
 
@@ -25,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
         ret['gender'] = obj.get_gender_display().upper() if obj.gender else None
         ret['nationality'] = obj.get_nationality_display().upper() if obj.nationality else None
 
-        query_address = Address.objects.filter(phone=obj.phone, is_valid=True)
+        query_address = UserAddress.objects.filter(phone=obj.phone, is_valid=True)
         ret['address'] = AddressSerializer(query_address.first()).data if query_address.exists() else None
         return ret
 

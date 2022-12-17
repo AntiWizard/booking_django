@@ -7,7 +7,7 @@ from rest_framework.reverse import reverse
 from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from users.models import User, Address
+from users.models import User, UserAddress
 from users.permissions import IsOwner
 from users.serializers import UserSerializer, AddressSerializer
 
@@ -67,7 +67,7 @@ class DetailAddressAPIView(generics.RetrieveUpdateAPIView):
 
         user = User.objects.filter(pk=self.kwargs['pk'])
         if user.exists():
-            return Address.objects.get(phone=user.get().phone)
+            return UserAddress.objects.get(phone=user.get().phone)
 
         return super(DetailAddressAPIView, self).get_object()
 

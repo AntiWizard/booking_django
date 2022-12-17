@@ -5,7 +5,7 @@ from users.views import ListUserAPIView, DetailUserAPIView, api_root, DetailAddr
 urlpatterns = [
     path('', api_root),
 
-    path('users/', ListUserAPIView.as_view(), name='user-list'),
+    path('auth/', ListUserAPIView.as_view(), name='user-list'),
     path('user/<int:pk>/', DetailUserAPIView.as_view(), name='user-detail'),
     path('user/<int:pk>/address', DetailAddressAPIView.as_view(), name='address-detail'),
 

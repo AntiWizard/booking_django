@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from users.models import User, Address
+from users.models import User, UserAddress
 
 
 class UserAdmin(admin.ModelAdmin):
@@ -8,7 +8,7 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ('phone',)
 
     def delete_queryset(self, request, queryset):
-        Address.objects.filter(phone__in=[item.phone for item in queryset]).delete()
+        UserAddress.objects.filter(phone__in=[item.phone for item in queryset]).delete()
         queryset.delete()
 
 
@@ -18,4 +18,4 @@ class AddressAdmin(admin.ModelAdmin):
 
 
 admin.site.register(User, UserAdmin)
-admin.site.register(Address, AddressAdmin)
+admin.site.register(UserAddress, AddressAdmin)

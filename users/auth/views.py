@@ -12,7 +12,7 @@ from users.auth.serializers import OTPSerializer, LoginSerializer
 from users.models import User
 from users.permissions import IsAnonymous
 from users.tasks import send_sms_to_user
-from utlis.users.otp_generator import otp_generator
+from utlis.auth.otp_generator import otp_generator
 
 
 class GenerateOTP(generics.ListAPIView):
