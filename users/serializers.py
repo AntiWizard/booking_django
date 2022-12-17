@@ -1,14 +1,41 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from users.base_address import City, Country, Location
 from users.models import User, UserAddress
 
 
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ("id", 'x_coordination', 'y_coordination',)
+        read_only_fields = ('id',)
+
+
+class CountrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        fields = ('id', 'name',)
+        read_only_fields = ('id', 'name',)
+
+
+class CitySerializer(serializers.ModelSerializer):
+    country = CountrySerializer(read_only=True, required=False)
+
+    class Meta:
+        model = City
+        fields = ('id', 'name', 'country',)
+        read_only_fields = ('id',)
+
+
 class AddressSerializer(serializers.ModelSerializer):
+    city = CitySerializer(required=False, read_only=True)
+    location = LocationSerializer(required=False, read_only=True)
+
     class Meta:
         model = UserAddress
-        fields = ('phone', 'country', 'city', 'zip_code', 'address',)
-        read_only_fields = ("phone",)
+        fields = ('id', 'phone', 'city', "location", 'zip_code', 'address',)
+        read_only_fields = ('id', "phone",)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -25,7 +52,7 @@ class UserSerializer(serializers.ModelSerializer):
         ret['gender'] = obj.get_gender_display().upper() if obj.gender else None
         ret['nationality'] = obj.get_nationality_display().upper() if obj.nationality else None
 
-        query_address = UserAddress.objects.filter(phone=obj.phone, is_valid=True)
+        query_address = UserAddress.objects.filter(phone=obj.phone)
         ret['address'] = AddressSerializer(query_address.first()).data if query_address.exists() else None
         return ret
 

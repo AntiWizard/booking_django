@@ -14,8 +14,7 @@ class Hotel(AbstractPlace):
 
 class HotelRoom(AbstractRoom):
     avatar = models.ImageField(upload_to="", null=True, blank=True)
-    place = models.ForeignKey(Hotel, related_name='hotel_room',
-                              on_delete=models.CASCADE)
+    place = models.ForeignKey(Hotel, related_name='hotel_room', on_delete=models.CASCADE)
 
     def __str__(self):
         return "{}: {}".format(self.place.name, self.number)

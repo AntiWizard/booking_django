@@ -40,7 +40,7 @@ class LoginUserAPIView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = LoginSerializer
     permission_classes = [IsAnonymous]
-    throttle_scope = 'create_user'
+    # throttle_scope = 'create_user'
 
     def post(self, request, *args, **kwargs):
         if request.data.get('phone') and request.data.get('otp'):  # TODO check phone correct logic

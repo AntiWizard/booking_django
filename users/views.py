@@ -1,12 +1,11 @@
 from rest_framework import generics
 from rest_framework.decorators import api_view
-from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from users.base_address import Country, City
 from users.models import User, UserAddress
 from users.permissions import IsOwner
 from users.serializers import UserSerializer, AddressSerializer
@@ -17,15 +16,6 @@ def api_root(request, _format=None):
     return Response({
         'swagger': reverse('swagger-ui', request=request, format=_format),
     })
-
-
-class ListUserAPIView(generics.ListAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
-    pagination_class = LimitOffsetPagination
-    authentication_classes = [JWTAuthentication]
-    throttle_classes = [UserRateThrottle]
 
 
 class DetailUserAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -72,6 +62,9 @@ class DetailAddressAPIView(generics.RetrieveUpdateAPIView):
         return super(DetailAddressAPIView, self).get_object()
 
     def perform_update(self, serializer):
-        if serializer.validated_data.get('city'):
-            serializer.validated_data['city'] = serializer.validated_data['city'].title()
+        city = self.request.data.get('city')
+        if city:
+            country = city.get('country')
+            if country and Country.objects.filter(id=country.get('id')).exists():
+                City.objects.get_or_create(country_id=country['id'], name=city.get('name', self.get_object().city.name))
         serializer.save()

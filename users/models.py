@@ -58,7 +58,7 @@ class User(AbstractUser):
 
     class Nationality(models.TextChoices):
         IRAN = "IR"
-        UNITED_KINGDOM = "UK"
+        UNITED_STATE = "US"
 
     username = None
     email = models.EmailField(blank=True, null=True)
@@ -91,6 +91,7 @@ class User(AbstractUser):
 
 class UserAddress(AbstractAddress):
     zip_code = models.BigIntegerField(validators=[validation_zip_code], blank=True, null=True)
+    location = None
 
     def __str__(self):
         return self.phone
