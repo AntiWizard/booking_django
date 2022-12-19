@@ -19,6 +19,9 @@ class AbstractFlight(models.Model):
     rate = models.OneToOneField('flight.FlightRate', on_delete=models.PROTECT)
     address = models.OneToOneField('place.PlaceAddress', on_delete=models.PROTECT)
 
+    def possible_reservation(self, number):
+        return number + self.number_reserved <= self.max_reservation
+
     class Meta:
         abstract = True
 

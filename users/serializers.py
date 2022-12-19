@@ -37,6 +37,30 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = ('id', 'phone', 'city', "location", 'zip_code', 'address',)
         read_only_fields = ('id', "phone",)
 
+    def to_internal_value(self, data):
+        internal_value = super(AddressSerializer, self).to_internal_value(data)
+        city = data.get("city")
+        if city:
+            internal_value.update({
+                "city": city
+            })
+        return internal_value
+
+    def update(self, instance, validated_data):
+        city = validated_data.pop('city')
+        country = city.pop('country')
+        if city:
+            if country and Country.objects.filter(id=country.get('id', None)).exists():
+                city_name = city.get('name', instance.city.name if instance.city else None)
+                country_id = country.get('id', instance.city.country_id if instance.city else None)
+                new_city, _ = City.objects.get_or_create(name=city_name,
+                                                         country_id=country_id
+                                                         ,
+                                                         defaults={"name": city_name})
+                validated_data["city"] = new_city
+        super().update(instance, validated_data)
+        return instance
+
 
 class UserSerializer(serializers.ModelSerializer):
     address = AddressSerializer(read_only=True, required=False)

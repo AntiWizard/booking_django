@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class AbstractReservationPlace(models.Model):
@@ -9,6 +10,9 @@ class AbstractReservationPlace(models.Model):
     adult_count = models.PositiveSmallIntegerField(default=0)
     children_count = models.PositiveSmallIntegerField(default=0)
     total_cost = models.OneToOneField("reservations.Price", on_delete=models.PROTECT)
+
+    def check_date(self):
+        return self.check_out_date > self.check_in_date >= timezone.now()
 
     class Meta:
         abstract = True
@@ -21,6 +25,12 @@ class AbstractReservationFlight(models.Model):
     adult_count = models.PositiveSmallIntegerField(default=0)
     children_count = models.PositiveSmallIntegerField(default=0)
     total_cost = models.OneToOneField("reservations.Price", on_delete=models.PROTECT)
+
+    def check_date(self):
+        if self.check_destination_date:
+            return self.check_destination_date > self.check_source_date >= timezone.now()
+        else:
+            return self.check_source_date >= timezone.now()
 
     class Meta:
         abstract = True
