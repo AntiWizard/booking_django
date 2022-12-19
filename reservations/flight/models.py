@@ -6,7 +6,7 @@ from users.base_address import AbstractAddress
 
 
 class AbstractFlight(models.Model):
-    class FlightStatus(models.TextChoices):
+    class ReservedStatus(models.TextChoices):
         FREE = "FREE"
         INVALID = "INVALID"
         RESERVED = "RESERVED"
@@ -14,16 +14,13 @@ class AbstractFlight(models.Model):
     description = models.TextField(blank=True)
     max_reservation = models.PositiveSmallIntegerField()
     number_reserved = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
-    status = models.CharField(max_length=10, choices=FlightStatus.choices, default=FlightStatus.FREE)
+    status = models.CharField(max_length=10, choices=ReservedStatus.choices, default=ReservedStatus.FREE)
     type = models.ForeignKey('flight.FlightType', related_name='%(app_label)s_%(class)s', on_delete=models.PROTECT)
     rate = models.OneToOneField('flight.FlightRate', on_delete=models.PROTECT)
     source = models.OneToOneField('flight.FlightAddress', on_delete=models.PROTECT,
                                   related_name='%(app_label)s_%(class)s_source')
     destination = models.OneToOneField('flight.FlightAddress', on_delete=models.PROTECT,
                                        related_name='%(app_label)s_%(class)s_destination')
-
-    def possible_reservation(self, number):
-        return number + self.number_reserved <= self.max_reservation
 
     class Meta:
         abstract = True

@@ -12,9 +12,10 @@ from users.serializers import UserSerializer, AddressSerializer
 
 
 @api_view(['GET'])
-def api_root(request, _format=None):
+def api_schema(request, _format=None):
     return Response({
         'swagger': reverse('swagger-ui', request=request, format=_format),
+        'api': reverse('api-view_list', request=request, format=_format),
     })
 
 

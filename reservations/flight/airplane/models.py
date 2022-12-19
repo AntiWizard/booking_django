@@ -19,3 +19,6 @@ class AirplaneReservation(AbstractReservationFlight):
 
     def __str__(self):
         return "{} - {} -> {}".format(self.user.phone, self.airplane.pilot, self.check_source_date)
+
+    def possible_reservation(self, number):
+        return number + self.airplane.number_reserved <= self.airplane.max_reservation
