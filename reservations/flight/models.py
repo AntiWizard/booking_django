@@ -17,7 +17,10 @@ class AbstractFlight(models.Model):
     status = models.CharField(max_length=10, choices=FlightStatus.choices, default=FlightStatus.FREE)
     type = models.ForeignKey('flight.FlightType', related_name='%(app_label)s_%(class)s', on_delete=models.PROTECT)
     rate = models.OneToOneField('flight.FlightRate', on_delete=models.PROTECT)
-    address = models.OneToOneField('place.PlaceAddress', on_delete=models.PROTECT)
+    source = models.OneToOneField('flight.FlightAddress', on_delete=models.PROTECT,
+                                  related_name='%(app_label)s_%(class)s_source')
+    destination = models.OneToOneField('flight.FlightAddress', on_delete=models.PROTECT,
+                                       related_name='%(app_label)s_%(class)s_destination')
 
     def possible_reservation(self, number):
         return number + self.number_reserved <= self.max_reservation
