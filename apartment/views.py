@@ -9,9 +9,13 @@ class CreateApartmentAPIView(generics.CreateAPIView):
     pass
 
 
-class DetailApartmentAPIView(generics.UpdateAPIView, generics.DestroyAPIView):
+class RetrieveApartmentAPIView(generics.RetrieveAPIView):
     pass
 
 
-class RetrieveApartmentAPIView(generics.RetrieveAPIView):
+class EditApartmentAPIView(generics.UpdateAPIView):
+    pass
+
+
+class DeleteApartmentAPIView(generics.DestroyAPIView):
     pass

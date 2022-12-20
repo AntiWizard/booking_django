@@ -10,5 +10,5 @@ def api_views(request, _format=None):
         'apartment': reverse('apartment-list', request=request, format=_format),
         'airplane': reverse('airplane-list', request=request, format=_format),
         'car': reverse('car-list', request=request, format=_format),
-        'ship': reverse('Ship-list', request=request, format=_format),
+        'ship': reverse('ship-list', request=request, format=_format),
     })

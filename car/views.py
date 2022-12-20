@@ -6,9 +6,17 @@ class ListCarAPIView(generics.ListAPIView):
     pass
 
 
+class CreateCarAPIView(generics.CreateAPIView):
+    pass
+
+
 class RetrieveCarAPIView(generics.RetrieveAPIView):
     pass
 
 
-class DetailCarAPIView(generics.DestroyAPIView, generics.UpdateAPIView):
+class EditCarAPIView(generics.UpdateAPIView):
+    pass
+
+
+class DeleteCarAPIView(generics.DestroyAPIView):
     pass

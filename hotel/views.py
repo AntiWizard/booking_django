@@ -10,9 +10,13 @@ class CreateHotelAPIView(generics.CreateAPIView):
     pass
 
 
-class DetailHotelAPIView(generics.UpdateAPIView, generics.DestroyAPIView):
+class RetrieveHotelAPIView(generics.RetrieveAPIView):
     pass
 
 
-class RetrieveHotelAPIView(generics.RetrieveAPIView):
+class EditHotelAPIView(generics.UpdateAPIView):
+    pass
+
+
+class DeleteHotelAPIView(generics.DestroyAPIView):
     pass
