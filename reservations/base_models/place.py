@@ -7,8 +7,9 @@ class AbstractPlace(models.Model):
     type = models.ForeignKey('reservations.PlaceType', related_name='%(app_label)s_%(class)s',
                              on_delete=models.PROTECT)
 
-    rate = models.OneToOneField('reservations.PlaceRate', on_delete=models.PROTECT)
-    address = models.OneToOneField('reservations.PlaceAddress', on_delete=models.PROTECT)
+    is_valid = models.BooleanField(default=True)
+    created_time = models.DateTimeField(auto_now_add=True)
+    modified_time = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name

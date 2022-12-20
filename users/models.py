@@ -56,10 +56,6 @@ class User(AbstractUser):
         MALE = "MALE"
         FEMALE = "FEMALE"
 
-    class Nationality(models.TextChoices):
-        IRAN = "IR"
-        UNITED_STATE = "US"
-
     username = None
     email = models.EmailField(blank=True, null=True)
     phone_regex = RegexValidator(regex=r'^[1-9][0-9]{8,14}$',
@@ -68,7 +64,7 @@ class User(AbstractUser):
     phone = models.CharField(validators=[phone_regex], max_length=16, unique=True)
     birth_day = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=Gender.choices, null=True, blank=True)
-    nationality = models.CharField(max_length=40, choices=Nationality.choices, null=True, blank=True)
+    nationality = models.CharField(max_length=40, null=True, blank=True)
     avatar = models.ImageField(upload_to='auth/avatars/', null=True, blank=True)
     is_valid = models.BooleanField(default=True)
     created_time = models.DateTimeField(auto_now_add=True)
