@@ -48,19 +48,19 @@ INSTALLED_APPS = [
     'comments.apps.CommentsConfig',
     'reservations.apps.ReservationConfig',
 
-    'reservations.place.apps.PlaceConfig',
-    'reservations.place.room.apps.RoomConfig',
-    'reservations.place.hotel.apps.HotelConfig',
-    'reservations.place.apartment.apps.ApartmentConfig',
 
-    'reservations.flight.apps.FlightConfig',
-    'reservations.flight.airplane.apps.AirplaneConfig',
-    'reservations.flight.car.apps.CarConfig',
-    'reservations.flight.ship.apps.ShipConfig',
+    'hotel.apps.HotelConfig',
+    'apartment.apps.ApartmentConfig',
+
+    'airplane.apps.AirplaneConfig',
+    'car.apps.CarConfig',
+    'ship.apps.ShipConfig',
 
 ]
 
 MIDDLEWARE = [
+    'silk.middleware.SilkyMiddleware',
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

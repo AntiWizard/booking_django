@@ -19,19 +19,19 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from api.views import api_views
+from booking.api.views import api_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('users.urls')),
 
     path('api/', api_views, name='api-view_list'),
-    path('api/', include('reservations.place.hotel.urls')),
-    path('api/', include('reservations.place.apartment.urls')),
+    path('api/', include('hotel.urls')),
+    path('api/', include('apartment.urls')),
 
-    path('api/', include('reservations.flight.airplane.urls')),
-    path('api/', include('reservations.flight.car.urls')),
-    path('api/', include('reservations.flight.ship.urls')),
+    path('api/', include('airplane.urls')),
+    path('api/', include('car.urls')),
+    path('api/', include('ship.urls')),
 
     path('silk/', include('silk.urls', namespace='silk')),
 

@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 
-from users.base_address import AbstractAddress
+from reservations.base_models.address import AbstractAddress
 from utlis.validation_zip_code import validation_zip_code
 
 

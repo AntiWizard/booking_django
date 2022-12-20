@@ -1,15 +1,19 @@
-from django.conf import settings
-from django.db import models
 from django.utils import timezone
 
+from reservations.base_models.address import AbstractAddress
+from reservations.base_models.place import AbstractPlace
+from reservations.base_models.rate import AbstractRate
+from reservations.base_models.reservation import AbstractReservation
+from reservations.sub_models.address import *
+from reservations.sub_models.location import *
+from reservations.sub_models.price import *
+from reservations.sub_models.rate import *
+from reservations.sub_models.type import *
 
-class AbstractReservationPlace(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
+
+class AbstractReservationPlace(AbstractReservation):
     check_in_date = models.DateTimeField()
     check_out_date = models.DateTimeField()
-    adult_count = models.PositiveSmallIntegerField(default=0)
-    children_count = models.PositiveSmallIntegerField(default=0)
-    total_cost = models.OneToOneField("reservations.Price", on_delete=models.PROTECT)
 
     def check_date(self):
         return self.check_out_date > self.check_in_date >= timezone.now()
@@ -18,44 +22,11 @@ class AbstractReservationPlace(models.Model):
         abstract = True
 
 
-class AbstractReservationFlight(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
+class AbstractReservationTransport(AbstractReservation):
     check_source_date = models.DateTimeField()
-    check_destination_date = models.DateTimeField(null=True)
-    adult_count = models.PositiveSmallIntegerField(default=0)
-    children_count = models.PositiveSmallIntegerField(default=0)
-    total_cost = models.OneToOneField("reservations.Price", on_delete=models.PROTECT)
 
     def check_date(self):
-        if self.check_destination_date:
-            return self.check_destination_date > self.check_source_date >= timezone.now()
-        else:
-            return self.check_source_date >= timezone.now()
+        return self.check_source_date >= timezone.now()
 
     class Meta:
         abstract = True
-
-
-class Currency(models.Model):
-    name = models.CharField(max_length=40)
-    code = models.CharField(max_length=4)
-
-    def __str__(self):
-        return self.code
-
-
-class Price(models.Model):
-    value = models.FloatField(default=0.0)
-    currency = models.OneToOneField(Currency, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return '{} ({})'.format(str(self.value), self.currency.code)
-
-
-class CurrencyExchangeRate(models.Model):
-    rate = models.FloatField()
-    currency_from = models.OneToOneField('Currency', on_delete=models.CASCADE, related_name="currency_from")
-    currency_to = models.OneToOneField('Currency', on_delete=models.CASCADE, related_name="currency_to")
-
-    def __str__(self):
-        return "{}/{}: {}".format(self.currency_from.code, self.currency_to.code, str(self.rate))
