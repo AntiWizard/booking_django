@@ -21,8 +21,8 @@ class AirplaneRateSerializer(serializers.ModelSerializer):
 
 
 class AirplaneSerializer(serializers.ModelSerializer):
-    address = AirplaneAddressSerializer()
-    rate = AirplaneRateSerializer(required=False)
+    source = AirplaneAddressSerializer()
+    destination = AirplaneAddressSerializer()
     type = TransportTypeSerializer()
 
     class Meta:

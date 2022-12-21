@@ -178,7 +178,7 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 SILKY_AUTHENTICATION = True  # User must login

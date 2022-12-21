@@ -21,8 +21,8 @@ class BusRateSerializer(serializers.ModelSerializer):
 
 
 class BusSerializer(serializers.ModelSerializer):
-    address = BusAddressSerializer()
-    rate = BusRateSerializer(required=False)
+    source = BusAddressSerializer()
+    destination = BusAddressSerializer()
     type = TransportTypeSerializer()
 
     class Meta:

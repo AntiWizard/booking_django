@@ -2,7 +2,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import PermissionsMixin, AbstractUser, UserManager
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.db import models
+from django.db import models, transaction
 
 from reservations.base_models.address import AbstractAddress
 from utlis.validation_zip_code import validation_zip_code
@@ -78,6 +78,7 @@ class User(AbstractUser):
     def __str__(self):
         return self.phone
 
+    @transaction.atomic
     def save(self, *args, **kwargs):
         user_address = UserAddress.objects.filter(phone=self.phone)
         if not user_address.exists():

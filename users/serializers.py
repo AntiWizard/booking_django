@@ -1,23 +1,13 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-# from sub_models.location import Location
 from users.models import User, UserAddress
 
 
-# class LocationSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Location
-#         fields = ("id", 'x_coordination', 'y_coordination',)
-#         read_only_fields = ('id',)
-
-
 class AddressSerializer(serializers.ModelSerializer):
-    # location = LocationSerializer(required=False, read_only=True)
-
     class Meta:
         model = UserAddress
-        fields = ('id', 'phone', "country", 'city', "location", 'zip_code', 'address',)
+        fields = ('id', 'phone', "country", 'city', 'zip_code', 'address',)
         read_only_fields = ('id', "phone",)
 
 

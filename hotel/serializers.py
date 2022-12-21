@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from hotel.models import Hotel, HotelAddress
+from hotel.models import Hotel, HotelAddress, HotelRating
 from reservations.sub_models.type import ResidenceType
 from reservations.sub_serializers import LocationSerializer, ResidenceTypeSerializer
 
@@ -14,10 +14,10 @@ class HotelAddressSerializer(serializers.ModelSerializer):
         fields = ('phone', 'country', 'city', 'address', 'location', 'zip_code')
 
 
-# class HotelRateSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = HotelRating
-#         fields = ('hotel', 'user', 'rate',)
+class HotelRateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HotelRating
+        fields = ('hotel', 'user', 'rate',)
 
 
 class HotelSerializer(serializers.ModelSerializer):
