@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from reservations.sub_models.type import TransportType
@@ -29,6 +30,7 @@ class ShipSerializer(serializers.ModelSerializer):
         fields = ('capitan', 'description', 'type', 'status', 'max_reservation', 'number_reserved', 'source',
                   'destination',)
 
+    @transaction.atomic
     def create(self, validated_data):
         source = validated_data.pop('source') if 'source' in validated_data else None
         destination = validated_data.pop('destination') if 'destination' in validated_data else None

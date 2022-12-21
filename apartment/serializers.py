@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from apartment.models import ApartmentRating, ApartmentAddress, Apartment
@@ -29,6 +30,7 @@ class ApartmentSerializer(serializers.ModelSerializer):
         model = Apartment
         fields = ('name', 'description', 'type', 'address', 'unit_count', 'avatar')
 
+    @transaction.atomic
     def create(self, validated_data):
         address = validated_data.pop('address') if 'address' in validated_data else None
         type = validated_data.pop('type') if 'type' in validated_data else None

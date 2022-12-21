@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from airplane.models import Airplane, AirplaneAddress, AirplaneRating
@@ -29,6 +30,7 @@ class AirplaneSerializer(serializers.ModelSerializer):
         fields = ('pilot', 'description', 'type', 'status', 'max_reservation', 'number_reserved', 'source',
                   'destination',)
 
+    @transaction.atomic
     def create(self, validated_data):
         source = validated_data.pop('source') if 'source' in validated_data else None
         destination = validated_data.pop('destination') if 'destination' in validated_data else None
@@ -40,5 +42,4 @@ class AirplaneSerializer(serializers.ModelSerializer):
         type, _ = TransportType.objects.get_or_create(title=type['title'], defaults={"title": type['title']})
 
         airplane = Airplane.objects.create(source=source, destination=destination, type=type, **validated_data)
-
         return airplane
