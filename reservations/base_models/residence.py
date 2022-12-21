@@ -1,9 +1,17 @@
 from django.db import models
 
 
-class AbstractPlace(models.Model):
+class StayStatus(models.TextChoices):
+    FREE = "FREE"
+    SPACE = "SPACE"
+    FULL = "FULL"
+    CANCELLED = "CANCELLED"
+
+
+class AbstractResidence(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
+    status = models.CharField(max_length=10, choices=StayStatus.choices, default=StayStatus.FREE)
     type = models.ForeignKey('reservations.PlaceType', related_name='%(app_label)s_%(class)s',
                              on_delete=models.PROTECT)
 

@@ -13,7 +13,7 @@ class AbstractAddress(models.Model):
     location = models.OneToOneField("reservations.Location", on_delete=models.PROTECT, null=True)
 
     def __str__(self):
-        return "{}:{}".format(self.country, self.city)
+        return "{} : {}".format(self.country, self.city)
 
     class Meta:
         abstract = True

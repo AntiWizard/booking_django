@@ -3,6 +3,7 @@ from django.db import models
 
 class TransportStatus(models.TextChoices):
     FREE = "FREE"
+    SPACE = "SPACE"
     TRANSFER = "TRANSFER"
     ARRIVED = "ARRIVED"
     CANCELLED = 'CANCELLED'

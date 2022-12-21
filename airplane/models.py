@@ -16,12 +16,12 @@ class Airplane(AbstractTransport):
                                     related_name='destination')
 
     def __str__(self):
-        return self.pilot
+        return "{} : {}".format(self.id, self.pilot)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                condition=models.Q(status__in=[TransportStatus.ARRIVED, TransportStatus.CANCELLED]), # check
+                condition=models.Q(status__in=[TransportStatus.FREE, TransportStatus.SPACE, TransportStatus.TRANSFER]),
                 fields=('pilot', 'status'), name='unique_pilot_status')]
 
 
@@ -29,34 +29,34 @@ class AirplaneSeat(AbstractSeat):
     airplane = models.ForeignKey(Airplane, related_name='seat', on_delete=models.CASCADE)
 
     def __str__(self):
-        return "{}: {}".format(self.airplane.pilot, self.number)
+        return "{}: {}".format(self.airplane.id, self.number)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=('airplane', 'number'), name='unique_airplane_number_seat')]
+                fields=('airplane', 'number'), name='unique_airplane_seat')]
 
 
 class AirplaneReservation(AbstractReservationTransport):
-    airplane_seat = models.ForeignKey(AirplaneSeat, on_delete=models.PROTECT, related_name="airplane_reservation")
+    seat = models.ForeignKey(AirplaneSeat, on_delete=models.PROTECT, related_name="airplane_reservation")
 
     def __str__(self):
-        return "{} - {} -> {}".format(self.user.phone, self.airplane_seat.airplane.pilot, self.check_source_date)
+        return "{} - {} -> {}".format(self.user.phone, self.seat.airplane.id, self.check_source_date)
 
     def is_possible_reservation(self, number):
-        return number + self.airplane_seat.airplane.number_reserved <= self.airplane_seat.airplane.max_reservation
+        return number + self.seat.airplane.number_reserved <= self.seat.airplane.max_reservation
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=('user', 'airplane_seat'), name='unique_user_airplane_seat_number')]
+                fields=('user', 'seat'), name='unique_user_airplane_seat')]
 
 
 class AirplaneRating(AbstractRate):
     airplane = models.ForeignKey(Airplane, related_name='rate', on_delete=models.CASCADE)
 
     def __str__(self):
-        return "{} got {} from {}".format(self.airplane.pilot, self.airplane.rate, self.user)
+        return "{} got {} from {}".format(self.airplane.id, self.airplane.rate, self.user.phone)
 
     class Meta:
         constraints = [
@@ -67,4 +67,4 @@ class AirplaneRating(AbstractRate):
 class AirplaneAddress(AbstractAddress):
 
     def __str__(self):
-        return "{}:{}".format(self.country, self.city)
+        return "{} : {}".format(self.country, self.city)

@@ -16,7 +16,7 @@ class AbstractReservation(models.Model):
         abstract = True
 
 
-class AbstractReservationPlace(AbstractReservation):
+class AbstractReservationResidence(AbstractReservation):
     check_in_date = models.DateTimeField()
     check_out_date = models.DateTimeField()
 
