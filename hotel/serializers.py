@@ -2,8 +2,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from hotel.models import Hotel, HotelAddress, HotelRating
+from reservations.serializers import LocationSerializer, ResidenceTypeSerializer
 from reservations.sub_models.type import ResidenceType
-from reservations.sub_serializers import LocationSerializer, ResidenceTypeSerializer
 
 
 class HotelAddressSerializer(serializers.ModelSerializer):

@@ -2,8 +2,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from airplane.models import Airplane, AirplaneAddress, AirplaneRating
+from reservations.serializers import LocationSerializer, TransportTypeSerializer
 from reservations.sub_models.type import TransportType
-from reservations.sub_serializers import LocationSerializer, TransportTypeSerializer
 
 
 class AirplaneAddressSerializer(serializers.ModelSerializer):

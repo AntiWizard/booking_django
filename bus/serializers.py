@@ -2,8 +2,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from bus.models import Bus, BusAddress, BusRating
+from reservations.serializers import LocationSerializer, TransportTypeSerializer
 from reservations.sub_models.type import TransportType
-from reservations.sub_serializers import LocationSerializer, TransportTypeSerializer
 
 
 class BusAddressSerializer(serializers.ModelSerializer):

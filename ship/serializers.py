@@ -1,8 +1,8 @@
 from django.db import transaction
 from rest_framework import serializers
 
+from reservations.serializers import LocationSerializer, TransportTypeSerializer
 from reservations.sub_models.type import TransportType
-from reservations.sub_serializers import LocationSerializer, TransportTypeSerializer
 from ship.models import Ship, ShipAddress, ShipRating
 
 
