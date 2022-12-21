@@ -12,7 +12,7 @@ class AbstractResidence(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=10, choices=StayStatus.choices, default=StayStatus.FREE)
-    type = models.ForeignKey('reservations.PlaceType', related_name='%(app_label)s_%(class)s',
+    type = models.ForeignKey('reservations.ResidenceType', related_name='%(app_label)s_%(class)s',
                              on_delete=models.PROTECT)
 
     is_valid = models.BooleanField(default=True)

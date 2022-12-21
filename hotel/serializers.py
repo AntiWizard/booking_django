@@ -2,8 +2,8 @@ from rest_framework import serializers
 
 from hotel.models import Hotel, HotelAddress, HotelRating
 from reservations.sub_models.location import Location
-from reservations.sub_models.type import PlaceType
-from reservations.sub_serializers import LocationSerializer, PlaceTypeSerializer
+from reservations.sub_models.type import ResidenceType
+from reservations.sub_serializers import LocationSerializer, ResidenceTypeSerializer
 
 
 class HotelAddressSerializer(serializers.ModelSerializer):
@@ -23,7 +23,7 @@ class HotelRateSerializer(serializers.ModelSerializer):
 class HotelSerializer(serializers.ModelSerializer):
     address = HotelAddressSerializer()
     rate = HotelRateSerializer(required=False)
-    type = PlaceTypeSerializer()
+    type = ResidenceTypeSerializer()
 
     class Meta:
         model = Hotel
@@ -40,7 +40,7 @@ class HotelSerializer(serializers.ModelSerializer):
                                                                "y_coordination": location['y_coordination']})
 
         address = HotelAddress.objects.create(location=location, **address)
-        type, _ = PlaceType.objects.get_or_create(title=type['title'], defaults={"title": type['title']})
+        type, _ = ResidenceType.objects.get_or_create(title=type['title'], defaults={"title": type['title']})
 
         hotel = Hotel.objects.create(address=address, type=type, **validated_data)
 

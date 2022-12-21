@@ -3,41 +3,41 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from hotel.models import Hotel
-from hotel.serializers import HotelSerializer
+from bus.models import Bus
+from bus.serializers import BusSerializer
 
 
-class ListHotelAPIView(generics.ListAPIView):
-    queryset = Hotel.objects.filter(is_valid=True).all()
-    serializer_class = HotelSerializer
+class ListBusAPIView(generics.ListAPIView):
+    queryset = Bus.objects.filter().all()
+    serializer_class = BusSerializer
     throttle_classes = [AnonRateThrottle]
 
 
-class CreateHotelAPIView(generics.CreateAPIView):
-    queryset = Hotel.objects.all()
-    serializer_class = HotelSerializer
+class CreateBusAPIView(generics.CreateAPIView):
+    queryset = Bus.objects.all()
+    serializer_class = BusSerializer
     permission_classes = [IsAdminUser]
     authentication_classes = [JWTAuthentication]
     throttle_classes = [UserRateThrottle]
 
 
-class RetrieveHotelAPIView(generics.RetrieveAPIView):
-    queryset = Hotel.objects.filter(is_valid=True).all()
-    serializer_class = HotelSerializer
+class RetrieveBusAPIView(generics.RetrieveAPIView):
+    queryset = Bus.objects.filter().all()
+    serializer_class = BusSerializer
     throttle_classes = [AnonRateThrottle]
 
 
-class EditHotelAPIView(generics.UpdateAPIView):
-    queryset = Hotel.objects.all()
-    serializer_class = HotelSerializer
+class EditBusAPIView(generics.UpdateAPIView):
+    queryset = Bus.objects.all()
+    serializer_class = BusSerializer
     permission_classes = [IsAdminUser]
     authentication_classes = [JWTAuthentication]
     throttle_classes = [UserRateThrottle]
 
 
-class DeleteHotelAPIView(generics.DestroyAPIView):
-    queryset = Hotel.objects.filter(is_valid=True).all()
-    serializer_class = HotelSerializer
+class DeleteBusAPIView(generics.DestroyAPIView):
+    queryset = Bus.objects.filter().all()
+    serializer_class = BusSerializer
     permission_classes = [IsAdminUser]
     authentication_classes = [JWTAuthentication]
     throttle_classes = [UserRateThrottle]

@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from reservations.sub_models.location import Location
 from reservations.sub_models.price import Price, Currency
-from reservations.sub_models.type import PlaceType, TransportType
+from reservations.sub_models.type import TransportType, ResidenceType
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -11,9 +11,9 @@ class LocationSerializer(serializers.ModelSerializer):
         fields = ('x_coordination', 'y_coordination',)
 
 
-class PlaceTypeSerializer(serializers.ModelSerializer):
+class ResidenceTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PlaceType
+        model = ResidenceType
         fields = ('title',)
 
 
@@ -39,7 +39,7 @@ class PriceSerializer(serializers.ModelSerializer):
 
 class CurrencyExchangeSerializer(serializers.ModelSerializer):
     currency_from = CurrencySerializer(required=False, read_only=True)
-    currenc_to = CurrencySerializer(required=False, read_only=True)
+    currency_to = CurrencySerializer(required=False, read_only=True)
 
     class Meta:
         model = Price

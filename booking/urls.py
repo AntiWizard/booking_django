@@ -30,7 +30,7 @@ urlpatterns = [
     path('api/', include('apartment.urls')),
 
     path('api/', include('airplane.urls')),
-    path('api/', include('car.urls')),
+    path('api/', include('bus.urls')),
     path('api/', include('ship.urls')),
 
     path('silk/', include('silk.urls', namespace='silk')),

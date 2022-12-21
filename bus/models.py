@@ -7,12 +7,12 @@ from reservations.base_models.seat import AbstractSeat
 from reservations.base_models.transport import AbstractTransport, TransportStatus
 
 
-class Car(AbstractTransport):
+class Bus(AbstractTransport):
     driver = models.CharField(max_length=50)
     max_reservation = models.PositiveSmallIntegerField(default=4)
-    source = models.ForeignKey('CarAddress', on_delete=models.PROTECT,
+    source = models.ForeignKey('BusAddress', on_delete=models.PROTECT,
                                related_name='source')
-    destination = models.ForeignKey('CarAddress', on_delete=models.PROTECT,
+    destination = models.ForeignKey('BusAddress', on_delete=models.PROTECT,
                                     related_name='destination')
 
     def __str__(self):
@@ -25,46 +25,46 @@ class Car(AbstractTransport):
                 fields=('driver', 'status'), name='unique_driver_status')]
 
 
-class CarSeat(AbstractSeat):
-    car = models.ForeignKey(Car, related_name='seat', on_delete=models.CASCADE)
+class BusSeat(AbstractSeat):
+    Bus = models.ForeignKey(Bus, related_name='seat', on_delete=models.CASCADE)
 
     def __str__(self):
-        return "{}: {}".format(self.car.id, self.number)
+        return "{}: {}".format(self.Bus.id, self.number)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=('car', 'number'), name='unique_car_seat')]
+                fields=('Bus', 'number'), name='unique_Bus_seat')]
 
 
-class CarReservation(AbstractReservationTransport):
-    seat = models.ForeignKey(CarSeat, on_delete=models.PROTECT, related_name="car_reservation")
+class BusReservation(AbstractReservationTransport):
+    seat = models.ForeignKey(BusSeat, on_delete=models.PROTECT, related_name="Bus_reservation")
 
     def __str__(self):
-        return "{} - {} -> {}".format(self.user.phone, self.seat.car.id, self.check_source_date)
+        return "{} - {} -> {}".format(self.user.phone, self.seat.Bus.id, self.check_source_date)
 
     def is_possible_reservation(self, number):
-        return number + self.seat.car.number_reserved <= self.seat.car.max_reservation
+        return number + self.seat.Bus.number_reserved <= self.seat.Bus.max_reservation
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=('user', 'seat'), name='unique_user_car_seat')]
+                fields=('user', 'seat'), name='unique_user_Bus_seat')]
 
 
-class CarRating(AbstractRate):
-    car = models.ForeignKey(Car, related_name='rate', on_delete=models.CASCADE)
+class BusRating(AbstractRate):
+    Bus = models.ForeignKey(Bus, related_name='rate', on_delete=models.CASCADE)
 
     def __str__(self):
-        return "{} got {} from {}".format(self.car.driver, self.car.rate, self.user.phone)
+        return "{} got {} from {}".format(self.Bus.driver, self.Bus.rate, self.user.phone)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=('car', 'user', 'rate'), name='unique_car_user_rate')]
+                fields=('Bus', 'user', 'rate'), name='unique_Bus_user_rate')]
 
 
-class CarAddress(AbstractAddress):
+class BusAddress(AbstractAddress):
 
     def __str__(self):
         return "{} : {}".format(self.country, self.city)

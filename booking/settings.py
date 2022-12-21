@@ -48,12 +48,11 @@ INSTALLED_APPS = [
     'comments.apps.CommentsConfig',
     'reservations.apps.ReservationConfig',
 
-
     'hotel.apps.HotelConfig',
     'apartment.apps.ApartmentConfig',
 
     'airplane.apps.AirplaneConfig',
-    'car.apps.CarConfig',
+    'bus.apps.BusConfig',
     'ship.apps.ShipConfig',
 
 ]

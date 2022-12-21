@@ -1,12 +1,12 @@
 from django.db import models
 
 
-class PlaceType(models.Model):
-    class PlaceTypeChoice(models.TextChoices):
+class ResidenceType(models.Model):
+    class ResidenceTypeChoice(models.TextChoices):
         BUSINESS = "BUSINESS"
         HOLIDAY = "HOLIDAY"
 
-    title = models.CharField(max_length=40, choices=PlaceTypeChoice.choices)
+    title = models.CharField(max_length=40, choices=ResidenceTypeChoice.choices)
 
     def __str__(self):
         return self.title
