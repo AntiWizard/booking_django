@@ -3,6 +3,7 @@ from django.db import models
 from reservations.base_models.address import AbstractAddress
 from reservations.base_models.rate import AbstractRate
 from reservations.base_models.reservation import AbstractReservationTransport
+from reservations.base_models.seat import AbstractSeat
 from reservations.base_models.transport import AbstractTransport
 
 
@@ -18,11 +19,18 @@ class Ship(AbstractTransport):
         return self.captain
 
 
-class ShipReservation(AbstractReservationTransport):
-    ship = models.ForeignKey(Ship, on_delete=models.PROTECT, related_name="ship_reservation")
+class ShipSeat(AbstractSeat):
+    ship = models.ForeignKey(Ship, related_name='seat', on_delete=models.CASCADE)
 
     def __str__(self):
-        return "{} - {} -> {}".format(self.user.phone, self.ship.captain, self.check_source_date)
+        return "{}: {}".format(self.ship.captain, self.number)
+
+
+class ShipReservation(AbstractReservationTransport):
+    ship_seat = models.ForeignKey(ShipSeat, on_delete=models.PROTECT, related_name="ship_reservation")
+
+    def __str__(self):
+        return "{} - {} -> {}".format(self.user.phone, self.ship_seat.ship.captain, self.check_source_date)
 
 
 class ShipRating(AbstractRate):
