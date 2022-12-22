@@ -10,19 +10,17 @@ from reservations.base_models.transport import AbstractTransport, TransportStatu
 class Ship(AbstractTransport):
     captain = models.CharField(max_length=50)
     max_reservation = models.PositiveSmallIntegerField(default=150)
-    source = models.ForeignKey('ShipAddress', on_delete=models.PROTECT,
-                               related_name='source')
-    destination = models.ForeignKey('ShipAddress', on_delete=models.PROTECT,
-                                    related_name='destination')
+    source = models.ForeignKey('ShipAddress', on_delete=models.PROTECT, related_name='source')
+    destination = models.ForeignKey('ShipAddress', on_delete=models.PROTECT, related_name='destination')
 
     def __str__(self):
         return self.captain
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                condition=models.Q(status__in=[TransportStatus.FREE, TransportStatus.SPACE, TransportStatus.TRANSFER]),
-                fields=('captain', 'status'), name='unique_captain_status')]
+        constraints = [models.UniqueConstraint(
+            condition=models.Q(
+                transport_status__in=[TransportStatus.FREE, TransportStatus.SPACE, TransportStatus.TRANSFER]),
+            fields=('captain', 'transport_status'), name='unique_captain_status')]
 
 
 class ShipSeat(AbstractSeat):
@@ -32,9 +30,8 @@ class ShipSeat(AbstractSeat):
         return "{}: {}".format(self.ship.captain, self.number)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('ship', 'number'), name='unique_ship_seat')]
+        constraints = [models.UniqueConstraint(
+            fields=('ship', 'number'), name='unique_ship_seat')]
 
 
 class ShipReservation(AbstractReservationTransport):
@@ -47,9 +44,8 @@ class ShipReservation(AbstractReservationTransport):
         return number + self.seat.ship.number_reserved <= self.seat.ship.max_reservation
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'seat'), name='unique_user_ship_seat')]
+        constraints = [models.UniqueConstraint(
+            fields=('user', 'seat'), name='unique_user_ship_seat')]
 
 
 class ShipRating(AbstractRate):
@@ -59,9 +55,8 @@ class ShipRating(AbstractRate):
         return "{} got {} from {}".format(self.ship.captain, self.ship.rate, self.user.phone)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('ship', 'user', 'rate'), name='unique_ship_user_rate')]
+        constraints = [models.UniqueConstraint(
+            fields=('ship', 'user', 'rate'), name='unique_ship_user_rate')]
 
 
 class ShipAddress(AbstractAddress):

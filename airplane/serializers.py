@@ -27,7 +27,7 @@ class AirplaneSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Airplane
-        fields = ('pilot', 'description', 'type', 'status', 'max_reservation', 'number_reserved', 'source',
+        fields = ('pilot', 'description', 'type', 'transport_status', 'max_reservation', 'number_reserved', 'source',
                   'destination',)
 
     @transaction.atomic

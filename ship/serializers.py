@@ -27,7 +27,7 @@ class ShipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ship
-        fields = ('captain', 'description', 'type', 'status', 'max_reservation', 'number_reserved', 'source',
+        fields = ('captain', 'description', 'type', 'transport_status', 'max_reservation', 'number_reserved', 'source',
                   'destination',)
 
     @transaction.atomic

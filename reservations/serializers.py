@@ -37,10 +37,10 @@ class PriceSerializer(serializers.ModelSerializer):
         fields = ('currency', 'value',)
 
 
-class CurrencyExchangeSerializer(serializers.ModelSerializer):
+class CurrencyExchangeRateSerializer(serializers.ModelSerializer):
     currency_from = CurrencySerializer(required=False, read_only=True)
     currency_to = CurrencySerializer(required=False, read_only=True)
 
     class Meta:
-        model = Price
+        model = CurrencyExchangeRate
         fields = ('rate', 'currency_from', 'currency_to',)

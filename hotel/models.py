@@ -13,17 +13,16 @@ class Hotel(AbstractResidence):
     avatar = models.ImageField(upload_to="", null=True, blank=True)
     star = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)], default=3)
     room_count = models.PositiveSmallIntegerField(default=100)
-    address = models.OneToOneField('HotelAddress', on_delete=models.PROTECT,
-                                   related_name='hotel_address')
+    address = models.OneToOneField('HotelAddress', on_delete=models.PROTECT, related_name='hotel_address')
 
     def __str__(self):
         return self.name
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                condition=models.Q(status__in=[StayStatus.FREE, StayStatus.SPACE, StayStatus.FULL]),
-                fields=('name', 'status'), name='unique_hotel_name_status')]
+        constraints = [models.UniqueConstraint(
+            condition=models.Q(residence_status__in=[StayStatus.FREE, StayStatus.SPACE, StayStatus.FULL]),
+            fields=('name', 'residence_status'),
+            name='unique_hotel_name_residence_status')]
 
 
 class HotelRoom(AbstractRoom):
@@ -34,8 +33,7 @@ class HotelRoom(AbstractRoom):
         return "{}: {}".format(self.hotel.name, self.number)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
+        constraints = [models.UniqueConstraint(
                 fields=('hotel', 'number'), name='unique_hotel_number_seat')]
 
 
@@ -47,8 +45,7 @@ class HotelReservation(AbstractReservationResidence):
                                                    self.check_out_date)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
+        constraints = [models.UniqueConstraint(
                 fields=('user', 'room'), name='unique_user_hotel_room')]
 
 
@@ -59,9 +56,8 @@ class HotelRating(AbstractRate):
         return "{} got {} from {}".format(self.hotel.name, self.hotel.rate, self.user.phone)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('hotel', 'user', 'rate'), name='unique_hotel_user_rate')]
+        constraints = [models.UniqueConstraint(
+            fields=('hotel', 'user', 'rate'), name='unique_hotel_user_rate')]
 
 
 class HotelAddress(AbstractAddress):

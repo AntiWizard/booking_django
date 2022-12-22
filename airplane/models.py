@@ -10,19 +10,17 @@ from reservations.base_models.transport import AbstractTransport, TransportStatu
 class Airplane(AbstractTransport):
     pilot = models.CharField(max_length=50)
     max_reservation = models.PositiveSmallIntegerField(default=150)
-    source = models.ForeignKey('AirplaneAddress', on_delete=models.PROTECT,
-                               related_name='source')
-    destination = models.ForeignKey('AirplaneAddress', on_delete=models.PROTECT,
-                                    related_name='destination')
+    source = models.ForeignKey('AirplaneAddress', on_delete=models.PROTECT, related_name='source')
+    destination = models.ForeignKey('AirplaneAddress', on_delete=models.PROTECT, related_name='destination')
 
     def __str__(self):
         return "{} : {}".format(self.id, self.pilot)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                condition=models.Q(status__in=[TransportStatus.FREE, TransportStatus.SPACE, TransportStatus.TRANSFER]),
-                fields=('pilot', 'status'), name='unique_pilot_status')]
+        constraints = [models.UniqueConstraint(
+            condition=models.Q(
+                transport_status__in=[TransportStatus.FREE, TransportStatus.SPACE, TransportStatus.TRANSFER]),
+            fields=('pilot', 'transport_status'), name='unique_pilot_transport_status')]
 
 
 class AirplaneSeat(AbstractSeat):
@@ -32,9 +30,8 @@ class AirplaneSeat(AbstractSeat):
         return "{}: {}".format(self.airplane.id, self.number)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('airplane', 'number'), name='unique_airplane_seat')]
+        constraints = [models.UniqueConstraint(
+            fields=('airplane', 'number'), name='unique_airplane_seat')]
 
 
 class AirplaneReservation(AbstractReservationTransport):
@@ -47,9 +44,8 @@ class AirplaneReservation(AbstractReservationTransport):
         return number + self.seat.airplane.number_reserved <= self.seat.airplane.max_reservation
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'seat'), name='unique_user_airplane_seat')]
+        constraints = [models.UniqueConstraint(
+            fields=('user', 'seat'), name='unique_user_airplane_seat')]
 
 
 class AirplaneRating(AbstractRate):
@@ -59,9 +55,8 @@ class AirplaneRating(AbstractRate):
         return "{} got {} from {}".format(self.airplane.id, self.airplane.rate, self.user.phone)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('airplane', 'user', 'rate'), name='unique_airplane_user_rate')]
+        constraints = [models.UniqueConstraint(
+            fields=('airplane', 'user', 'rate'), name='unique_airplane_user_rate')]
 
 
 class AirplaneAddress(AbstractAddress):

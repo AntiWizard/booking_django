@@ -10,19 +10,17 @@ from reservations.base_models.transport import AbstractTransport, TransportStatu
 class Bus(AbstractTransport):
     driver = models.CharField(max_length=50)
     max_reservation = models.PositiveSmallIntegerField(default=4)
-    source = models.ForeignKey('BusAddress', on_delete=models.PROTECT,
-                               related_name='source')
-    destination = models.ForeignKey('BusAddress', on_delete=models.PROTECT,
-                                    related_name='destination')
+    source = models.ForeignKey('BusAddress', on_delete=models.PROTECT, related_name='source')
+    destination = models.ForeignKey('BusAddress', on_delete=models.PROTECT, related_name='destination')
 
     def __str__(self):
         return "{} : {}".format(self.id, self.driver)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                condition=models.Q(status__in=[TransportStatus.FREE, TransportStatus.SPACE, TransportStatus.TRANSFER]),
-                fields=('driver', 'status'), name='unique_driver_status')]
+        constraints = [models.UniqueConstraint(
+            condition=models.Q(
+                transport_status__in=[TransportStatus.FREE, TransportStatus.SPACE, TransportStatus.TRANSFER]),
+            fields=('driver', 'transport_status'), name='unique_driver_transport_status')]
 
 
 class BusSeat(AbstractSeat):
@@ -32,9 +30,8 @@ class BusSeat(AbstractSeat):
         return "{}: {}".format(self.Bus.id, self.number)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('Bus', 'number'), name='unique_Bus_seat')]
+        constraints = [models.UniqueConstraint(
+            fields=('Bus', 'number'), name='unique_Bus_seat')]
 
 
 class BusReservation(AbstractReservationTransport):
@@ -47,9 +44,8 @@ class BusReservation(AbstractReservationTransport):
         return number + self.seat.Bus.number_reserved <= self.seat.Bus.max_reservation
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'seat'), name='unique_user_Bus_seat')]
+        constraints = [models.UniqueConstraint(
+            fields=('user', 'seat'), name='unique_user_Bus_seat')]
 
 
 class BusRating(AbstractRate):
@@ -59,9 +55,8 @@ class BusRating(AbstractRate):
         return "{} got {} from {}".format(self.Bus.driver, self.Bus.rate, self.user.phone)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('Bus', 'user', 'rate'), name='unique_Bus_user_rate')]
+        constraints = [models.UniqueConstraint(
+            fields=('Bus', 'user', 'rate'), name='unique_Bus_user_rate')]
 
 
 class BusAddress(AbstractAddress):

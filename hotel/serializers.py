@@ -26,7 +26,7 @@ class HotelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Hotel
-        fields = ('name', 'description', 'type', 'address', 'star', 'room_count', 'avatar')
+        fields = ('name', 'description', 'type', 'residence_status', 'address', 'star', 'room_count', 'avatar')
 
     @transaction.atomic
     def create(self, validated_data):

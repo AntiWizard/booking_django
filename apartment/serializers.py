@@ -26,7 +26,7 @@ class ApartmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Apartment
-        fields = ('name', 'description', 'type', 'status', 'address', 'unit_count', 'avatar')
+        fields = ('name', 'description', 'type', 'residence_status', 'address', 'unit_count', 'avatar')
 
     @transaction.atomic
     def create(self, validated_data):

@@ -13,7 +13,7 @@ class AbstractTransport(models.Model):
     description = models.TextField(blank=True)
     max_reservation = models.PositiveSmallIntegerField()
     number_reserved = models.PositiveSmallIntegerField()
-    status = models.CharField(max_length=10, choices=TransportStatus.choices, default=TransportStatus.FREE)
+    transport_status = models.CharField(max_length=15, choices=TransportStatus.choices, default=TransportStatus.FREE)
     type = models.ForeignKey('reservations.TransportType', related_name='%(app_label)s_%(class)s',
                              on_delete=models.PROTECT)
 

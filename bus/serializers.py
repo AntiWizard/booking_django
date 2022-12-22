@@ -27,7 +27,7 @@ class BusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Bus
-        fields = ('driver', 'description', 'type', 'status', 'max_reservation', 'number_reserved', 'source',
+        fields = ('driver', 'description', 'type', 'transport_status', 'max_reservation', 'number_reserved', 'source',
                   'destination',)
 
     @transaction.atomic

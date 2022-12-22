@@ -11,17 +11,15 @@ from utlis.validation_zip_code import validation_zip_code
 class Apartment(AbstractResidence):
     avatar = models.ImageField(upload_to="", null=True, blank=True)
     unit_count = models.PositiveSmallIntegerField(default=10)
-    address = models.OneToOneField('ApartmentAddress', on_delete=models.PROTECT,
-                                   related_name='apartment_address')
+    address = models.OneToOneField('ApartmentAddress', on_delete=models.PROTECT, related_name='apartment_address')
 
     def __str__(self):
         return "{} : {}".format(self.id, self.name)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                condition=models.Q(status__in=[StayStatus.FREE, StayStatus.SPACE, StayStatus.FULL]),
-                fields=('name', 'status'), name='unique_apartment_name_status')]
+        constraints = [models.UniqueConstraint(
+            condition=models.Q(residence_status__in=[StayStatus.FREE, StayStatus.SPACE, StayStatus.FULL]),
+            fields=('name', 'residence_status'), name='unique_apartment_name_residence_status')]
 
 
 class ApartmentRoom(AbstractRoom):
@@ -32,9 +30,8 @@ class ApartmentRoom(AbstractRoom):
         return "{}: {}".format(self.apartment.id, self.number)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('apartment', 'number'), name='unique_apartment_number_seat')]
+        constraints = [models.UniqueConstraint(
+            fields=('apartment', 'number'), name='unique_apartment_number_seat')]
 
 
 class ApartmentReservation(AbstractReservationResidence):
@@ -45,9 +42,8 @@ class ApartmentReservation(AbstractReservationResidence):
                                                    self.check_out_date)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'room'), name='unique_user_apartment_room')]
+        constraints = [models.UniqueConstraint(
+            fields=('user', 'room'), name='unique_user_apartment_room')]
 
 
 class ApartmentRating(AbstractRate):
@@ -57,9 +53,8 @@ class ApartmentRating(AbstractRate):
         return "{} got {} from {}".format(self.apartment.id, self.apartment.rate, self.user.phone)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('apartment', 'user', 'rate'), name='unique_apartment_user_rate')]
+        constraints = [models.UniqueConstraint(
+            fields=('apartment', 'user', 'rate'), name='unique_apartment_user_rate')]
 
 
 class ApartmentAddress(AbstractAddress):
