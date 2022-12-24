@@ -1,8 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from reservations.serializers import LocationSerializer, TransportTypeSerializer
-from reservations.sub_models.type import TransportType
+from reservations.serializers import LocationSerializer
 from ship.models import Ship, ShipAddress, ShipRating
 
 
@@ -23,11 +22,10 @@ class ShipRateSerializer(serializers.ModelSerializer):
 class ShipSerializer(serializers.ModelSerializer):
     source = ShipAddressSerializer()
     destination = ShipAddressSerializer()
-    type = TransportTypeSerializer()
 
     class Meta:
         model = Ship
-        fields = ('captain', 'description', 'type', 'transport_status', 'max_reservation', 'number_reserved', 'source',
+        fields = ('captain', 'description', 'transport_status', 'max_reservation', 'number_reserved', 'source',
                   'destination',)
 
     @transaction.atomic
@@ -38,8 +36,6 @@ class ShipSerializer(serializers.ModelSerializer):
 
         source = ShipAddress.objects.create(**source)
         destination = ShipAddress.objects.create(**destination)
-
-        type, _ = TransportType.objects.get_or_create(title=type['title'], defaults={"title": type['title']})
 
         ship = Ship.objects.create(source=source, destination=destination, type=type, **validated_data)
 

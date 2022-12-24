@@ -1,75 +1,45 @@
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import IsAdminUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from reservations.serializers import LocationSerializer, ResidenceTypeSerializer, TransportTypeSerializer, \
-    CurrencySerializer, PriceSerializer, CurrencyExchangeRateSerializer
+from reservations.serializers import LocationSerializer, \
+    CurrencySerializer, PriceByIdSerializer, PriceByCurrencySerializer, CurrencyExchangeRateByIdSerializer, \
+    CurrencyExchangeRateByCurrencySerializer
 from reservations.sub_models.location import Location
 from reservations.sub_models.price import Currency, Price, CurrencyExchangeRate
-from reservations.sub_models.type import ResidenceType, TransportType
 
 
-class LocationViewSet(viewsets.ModelViewSet):
+class AbstractReservation(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAdminUser]
+    # pagination_class = [LimitOffsetPagination]
+
+
+class LocationViewSet(AbstractReservation):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
-    authentication_classes = [JWTAuthentication]
-
-    def get_permissions(self):
-        if self.action == 'list':
-            return [AllowAny]
-        return [IsAdminUser]
 
 
-class ResidenceTypeViewSet(viewsets.ModelViewSet):
-    queryset = ResidenceType.objects.all()
-    serializer_class = ResidenceTypeSerializer
-    authentication_classes = [JWTAuthentication]
-
-    def get_permissions(self):
-        if self.action == 'list':
-            return [AllowAny]
-        return [IsAdminUser]
-
-
-class TransportTypeViewSet(viewsets.ModelViewSet):
-    queryset = TransportType.objects.all()
-    serializer_class = TransportTypeSerializer
-    authentication_classes = [JWTAuthentication]
-
-    def get_permissions(self):
-        if self.action == 'list':
-            return [AllowAny]
-        return [IsAdminUser]
-
-
-class CurrencyViewSet(viewsets.ModelViewSet):
+class CurrencyViewSet(AbstractReservation):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
-    authentication_classes = [JWTAuthentication]
-
-    def get_permissions(self):
-        if self.action == 'list':
-            return [AllowAny]
-        return [IsAdminUser]
 
 
-class PriceViewSet(viewsets.ModelViewSet):
+class PriceByIdViewSet(AbstractReservation):
     queryset = Price.objects.all()
-    serializer_class = PriceSerializer
-    authentication_classes = [JWTAuthentication]
-
-    def get_permissions(self):
-        if self.action == 'list':
-            return [AllowAny]
-        return [IsAdminUser]
+    serializer_class = PriceByIdSerializer
 
 
-class CurrencyExchangeRateViewSet(viewsets.ModelViewSet):
+class PriceByCurrencyViewSet(AbstractReservation):
+    queryset = Price.objects.all()
+    serializer_class = PriceByCurrencySerializer
+
+
+class CurrencyExchangeRateByIdViewSet(AbstractReservation):
     queryset = CurrencyExchangeRate.objects.all()
-    serializer_class = CurrencyExchangeRateSerializer
-    authentication_classes = [JWTAuthentication]
+    serializer_class = CurrencyExchangeRateByIdSerializer
 
-    def get_permissions(self):
-        if self.action == 'list':
-            return [AllowAny]
-        return [IsAdminUser]
+
+class CurrencyExchangeRateByCurrencyViewSet(AbstractReservation):
+    queryset = CurrencyExchangeRate.objects.all()
+    serializer_class = CurrencyExchangeRateByCurrencySerializer

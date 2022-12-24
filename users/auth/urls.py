@@ -4,7 +4,7 @@ from users.auth.token_obtain.views import TokenAPIView
 from users.auth.views import LoginUserAPIView, GenerateOTP
 
 urlpatterns = [
-    path('user/otp/', GenerateOTP.as_view(), name='user-list'),
+    path('user/otp/', GenerateOTP.as_view(), name='user-otp'),
 
     path('user/login/', LoginUserAPIView.as_view(), name='user-login'),
 

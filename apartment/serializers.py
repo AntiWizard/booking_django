@@ -2,8 +2,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apartment.models import ApartmentRating, ApartmentAddress, Apartment
-from reservations.serializers import LocationSerializer, ResidenceTypeSerializer
-from reservations.sub_models.type import ResidenceType
+from reservations.serializers import LocationSerializer
 
 
 class ApartmentAddressSerializer(serializers.ModelSerializer):
@@ -22,11 +21,10 @@ class ApartmentRateSerializer(serializers.ModelSerializer):
 
 class ApartmentSerializer(serializers.ModelSerializer):
     address = ApartmentAddressSerializer()
-    type = ResidenceTypeSerializer()
 
     class Meta:
         model = Apartment
-        fields = ('name', 'description', 'type', 'residence_status', 'address', 'unit_count', 'avatar')
+        fields = ('name', 'description', 'residence_status', 'address', 'unit_count', 'avatar')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -34,7 +32,6 @@ class ApartmentSerializer(serializers.ModelSerializer):
         type = validated_data.pop('type') if 'type' in validated_data else None
 
         address = ApartmentAddress.objects.create(**address)
-        type, _ = ResidenceType.objects.get_or_create(title=type['title'], defaults={"title": type['title']})
 
         apartment = Apartment.objects.create(address=address, type=type, **validated_data)
 

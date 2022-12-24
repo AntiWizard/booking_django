@@ -2,8 +2,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from bus.models import Bus, BusAddress, BusRating
-from reservations.serializers import LocationSerializer, TransportTypeSerializer
-from reservations.sub_models.type import TransportType
+from reservations.serializers import LocationSerializer
 
 
 class BusAddressSerializer(serializers.ModelSerializer):
@@ -23,11 +22,10 @@ class BusRateSerializer(serializers.ModelSerializer):
 class BusSerializer(serializers.ModelSerializer):
     source = BusAddressSerializer()
     destination = BusAddressSerializer()
-    type = TransportTypeSerializer()
 
     class Meta:
         model = Bus
-        fields = ('driver', 'description', 'type', 'transport_status', 'max_reservation', 'number_reserved', 'source',
+        fields = ('driver', 'description', 'transport_status', 'max_reservation', 'number_reserved', 'source',
                   'destination',)
 
     @transaction.atomic
@@ -38,8 +36,6 @@ class BusSerializer(serializers.ModelSerializer):
 
         source = BusAddress.objects.create(**source)
         destination = BusAddress.objects.create(**destination)
-
-        type, _ = TransportType.objects.get_or_create(title=type['title'], defaults={"title": type['title']})
 
         bus = Bus.objects.create(source=source, destination=destination, type=type, **validated_data)
 

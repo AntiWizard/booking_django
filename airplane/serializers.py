@@ -2,8 +2,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from airplane.models import Airplane, AirplaneAddress, AirplaneRating
-from reservations.serializers import LocationSerializer, TransportTypeSerializer
-from reservations.sub_models.type import TransportType
+from reservations.serializers import LocationSerializer
 
 
 class AirplaneAddressSerializer(serializers.ModelSerializer):
@@ -23,11 +22,10 @@ class AirplaneRateSerializer(serializers.ModelSerializer):
 class AirplaneSerializer(serializers.ModelSerializer):
     source = AirplaneAddressSerializer()
     destination = AirplaneAddressSerializer()
-    type = TransportTypeSerializer()
 
     class Meta:
         model = Airplane
-        fields = ('pilot', 'description', 'type', 'transport_status', 'max_reservation', 'number_reserved', 'source',
+        fields = ('pilot', 'description', 'transport_status', 'max_reservation', 'number_reserved', 'source',
                   'destination',)
 
     @transaction.atomic
@@ -38,8 +36,6 @@ class AirplaneSerializer(serializers.ModelSerializer):
 
         source = AirplaneAddress.objects.create(**source)
         destination = AirplaneAddress.objects.create(**destination)
-
-        type, _ = TransportType.objects.get_or_create(title=type['title'], defaults={"title": type['title']})
 
         airplane = Airplane.objects.create(source=source, destination=destination, type=type, **validated_data)
         return airplane

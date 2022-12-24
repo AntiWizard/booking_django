@@ -15,6 +15,11 @@ class Hotel(AbstractResidence):
     room_count = models.PositiveSmallIntegerField(default=100)
     address = models.OneToOneField('HotelAddress', on_delete=models.PROTECT, related_name='hotel_address')
 
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.name = self.name.title()
+        self.description = self.description.capitalize()
+        super().save(force_insert, force_update, using, update_fields)
+
     def __str__(self):
         return self.name
 
@@ -34,7 +39,7 @@ class HotelRoom(AbstractRoom):
 
     class Meta:
         constraints = [models.UniqueConstraint(
-                fields=('hotel', 'number'), name='unique_hotel_number_seat')]
+            fields=('hotel', 'number'), name='unique_hotel_number_seat')]
 
 
 class HotelReservation(AbstractReservationResidence):
@@ -46,7 +51,7 @@ class HotelReservation(AbstractReservationResidence):
 
     class Meta:
         constraints = [models.UniqueConstraint(
-                fields=('user', 'room'), name='unique_user_hotel_room')]
+            fields=('user', 'room'), name='unique_user_hotel_room')]
 
 
 class HotelRating(AbstractRate):
@@ -62,6 +67,11 @@ class HotelRating(AbstractRate):
 
 class HotelAddress(AbstractAddress):
     zip_code = models.BigIntegerField(validators=[validation_zip_code], blank=True, null=True)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.country = self.country.upper()
+        self.city = self.city.capitalize()
+        super().save(force_insert, force_update, using, update_fields)
 
     def __str__(self):
         return "{} : {}".format(self.country, self.city)

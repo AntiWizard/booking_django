@@ -1,46 +1,99 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from reservations.sub_models.location import Location
-from reservations.sub_models.price import Price, Currency
-from reservations.sub_models.type import TransportType, ResidenceType
+from reservations.sub_models.price import Price, Currency, CurrencyExchangeRate
+from utlis.get_or_create_currency import get_or_create_currency
 
 
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
-        fields = ('x_coordination', 'y_coordination',)
-
-
-class ResidenceTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ResidenceType
-        fields = ('title',)
-
-
-class TransportTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TransportType
-        fields = ('title',)
+        fields = ('id', 'x_coordination', 'y_coordination',)
 
 
 class CurrencySerializer(serializers.ModelSerializer):
     class Meta:
         model = Currency
-        fields = ('name', 'code',)
+        fields = ('id', 'name', 'code',)
 
 
-class PriceSerializer(serializers.ModelSerializer):
-    currency = CurrencySerializer(required=False, read_only=True)
+class PriceByIdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Price
+        fields = ('id', 'currency', 'value',)
+
+
+class PriceByCurrencySerializer(serializers.ModelSerializer):
+    currency = CurrencySerializer(many=False)
 
     class Meta:
         model = Price
-        fields = ('currency', 'value',)
+        fields = ('id', 'currency', 'value',)
+
+    @transaction.atomic
+    def create(self, validated_data):
+        currency = validated_data.pop('currency', None)
+
+        currency, _ = get_or_create_currency(currency)
+
+        price = Price.objects.create(currency=currency, **validated_data)
+        return price
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        currency = validated_data.pop('currency', None)
+
+        if currency:
+            currency, _ = get_or_create_currency(currency)
+
+            instance.currency = currency
+
+        instance.value = validated_data.get('value', instance.value)
+        instance.save()
+        return instance
 
 
-class CurrencyExchangeRateSerializer(serializers.ModelSerializer):
-    currency_from = CurrencySerializer(required=False, read_only=True)
-    currency_to = CurrencySerializer(required=False, read_only=True)
+class CurrencyExchangeRateByIdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CurrencyExchangeRate
+        fields = ('id', 'rate', 'currency_from', 'currency_to',)
+
+
+class CurrencyExchangeRateByCurrencySerializer(serializers.ModelSerializer):
+    currency_from = CurrencySerializer(many=False)
+    currency_to = CurrencySerializer(many=False)
 
     class Meta:
         model = CurrencyExchangeRate
-        fields = ('rate', 'currency_from', 'currency_to',)
+        fields = ('id', 'rate', 'currency_from', 'currency_to',)
+
+    @transaction.atomic
+    def create(self, validated_data):
+        currency_from = validated_data.pop('currency_from', None)
+        currency_to = validated_data.pop('currency_to', None)
+
+        currency_from, _ = get_or_create_currency(currency_from)
+        currency_to, _ = get_or_create_currency(currency_to)
+
+        ex, _ = CurrencyExchangeRate.objects.update_or_create(currency_from=currency_from, currency_to=currency_to,
+                                                              defaults={"rate": validated_data['rate']})
+        return ex
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        currency_from = validated_data.pop('currency_from', None)
+        currency_to = validated_data.pop('currency_to', None)
+
+        if currency_from:
+            currency_from, _ = get_or_create_currency(currency_from)
+
+            instance.currency_from = currency_from
+        if currency_to:
+            currency_to, _ = get_or_create_currency(currency_to)
+
+            instance.currency_to = currency_to
+
+        instance.rate = validated_data.get('rate', instance.rate)
+        instance.save()
+        return instance
