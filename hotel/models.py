@@ -4,7 +4,7 @@ from django.db import models
 from reservations.base_models.address import AbstractAddress
 from reservations.base_models.rate import AbstractRate
 from reservations.base_models.reservation import AbstractReservationResidence
-from reservations.base_models.residence import AbstractResidence, StayStatus
+from reservations.base_models.residence import AbstractResidence
 from reservations.base_models.room import AbstractRoom
 from utlis.validation_zip_code import validation_zip_code
 
@@ -24,10 +24,8 @@ class Hotel(AbstractResidence):
         return self.name
 
     class Meta:
-        constraints = [models.UniqueConstraint(
-            condition=models.Q(residence_status__in=[StayStatus.FREE, StayStatus.SPACE, StayStatus.FULL]),
-            fields=('name', 'residence_status'),
-            name='unique_hotel_name_residence_status')]
+        constraints = [models.UniqueConstraint(fields=('name', 'residence_status'),
+                                               name='unique_hotel_name_residence_status')]
 
 
 class HotelRoom(AbstractRoom):

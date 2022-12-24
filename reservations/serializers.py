@@ -21,7 +21,7 @@ class CurrencySerializer(serializers.ModelSerializer):
 class PriceByIdSerializer(serializers.ModelSerializer):
     class Meta:
         model = Price
-        fields = ('id', 'currency', 'value',)
+        fields = ('id', 'currency', 'value', 'from_date', 'to_date', 'ratio',)
 
 
 class PriceByCurrencySerializer(serializers.ModelSerializer):
@@ -29,7 +29,7 @@ class PriceByCurrencySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Price
-        fields = ('id', 'currency', 'value',)
+        fields = ('id', 'currency', 'value', 'from_date', 'to_date', 'ratio',)
 
     @transaction.atomic
     def create(self, validated_data):

@@ -15,6 +15,9 @@ class Currency(models.Model):
 
 class Price(models.Model):
     value = models.FloatField(default=0.0)
+    from_date = models.DateField(null=True, blank=True)
+    to_date = models.DateField(null=True, blank=True)
+    ratio = models.FloatField(default=0.0)
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='currency')
 
     def __str__(self):

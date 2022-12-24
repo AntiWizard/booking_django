@@ -18,7 +18,6 @@ class Apartment(AbstractResidence):
 
     class Meta:
         constraints = [models.UniqueConstraint(
-            condition=models.Q(residence_status__in=[StayStatus.FREE, StayStatus.SPACE, StayStatus.FULL]),
             fields=('name', 'residence_status'), name='unique_apartment_name_residence_status')]
 
 

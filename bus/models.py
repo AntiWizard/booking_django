@@ -2,7 +2,7 @@ from django.db import models
 
 from reservations.base_models.address import AbstractAddress
 from reservations.base_models.rate import AbstractRate
-from reservations.base_models.reservation import AbstractReservationTransport
+from reservations.base_models.reservation import AbstractReservation
 from reservations.base_models.seat import AbstractSeat
 from reservations.base_models.transport import AbstractTransport, TransportStatus
 
@@ -19,7 +19,7 @@ class Bus(AbstractTransport):
     class Meta:
         constraints = [models.UniqueConstraint(
             condition=models.Q(
-                transport_status__in=[TransportStatus.FREE, TransportStatus.SPACE, TransportStatus.TRANSFER]),
+                transport_status__in=[TransportStatus.SPACE, TransportStatus.TRANSFER]),
             fields=('driver', 'transport_status'), name='unique_driver_transport_status')]
 
 
@@ -34,11 +34,11 @@ class BusSeat(AbstractSeat):
             fields=('Bus', 'number'), name='unique_Bus_seat')]
 
 
-class BusReservation(AbstractReservationTransport):
+class BusReservation(AbstractReservation):
     seat = models.ForeignKey(BusSeat, on_delete=models.PROTECT, related_name="Bus_reservation")
 
     def __str__(self):
-        return "{} - {} -> {}".format(self.user.phone, self.seat.Bus.id, self.check_source_date)
+        return "{} - {}".format(self.user.phone, self.seat.Bus.id)
 
     def is_possible_reservation(self, number):
         return number + self.seat.Bus.number_reserved <= self.seat.Bus.max_reservation
