@@ -145,3 +145,23 @@ class HotelReservationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         reserve = HotelReservation.objects.create(**validated_data)
         return reserve
+
+
+class SuccessReservationSerializer(serializers.ModelSerializer):
+    total_cost = serializers.SerializerMethodField()
+    room = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HotelReservation
+        fields = (
+            'id', 'user', 'reserved_status', 'adult_count', 'children_count', 'total_cost', 'room', 'check_in_date',
+            'check_out_date',)
+        extra_kwargs = {'user': {"required": False, "read_only": True},
+                        "total_cost": {"required": False, "read_only": True}}
+
+    def get_room(self, obj):
+        return obj.room.status
+
+    def get_total_cost(self, obj):
+        return {"cost": (obj.adult_count + obj.children_count) * obj.room.price_per_night.value,
+                "currency": obj.room.price_per_night.currency.code}
