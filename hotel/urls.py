@@ -13,6 +13,6 @@ urlpatterns = [
     path('hotel/<str:name>/room/<int:number>/inital/', ListCreateHotelReservationAPIView.as_view(), name='reserved'),
     path('hotel/<str:name>/room/<int:number>/inital/<str:reserved_key>/', DetailHotelReservationAPIView.as_view(),
          name='reserved-detail'),
-    path('/reserved/<str:reserved_key>/payment/', SuccessReservationAPIView.as_view(),
-         name='reserved-detail'),
+    path('reserved/<str:reserved_key>/payment/', SuccessReservationAPIView.as_view(),
+         name='payment'),
 ]
