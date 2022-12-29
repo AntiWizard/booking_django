@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 
+from reservations.models import Payment
 from reservations.sub_models.location import Location
 from reservations.sub_models.price import Price, Currency, CurrencyExchangeRate
 from utlis.get_or_create_currency import get_or_create_currency
@@ -10,6 +11,12 @@ class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
         fields = ('id', 'x_coordination', 'y_coordination',)
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ('id', 'user', 'payment_status', 'reserved_key',)
 
 
 class CurrencySerializer(serializers.ModelSerializer):

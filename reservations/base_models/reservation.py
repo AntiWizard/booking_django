@@ -2,8 +2,6 @@ import uuid
 
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
-from rest_framework import exceptions
 
 
 class ReservedStatus(models.TextChoices):
@@ -31,14 +29,6 @@ class AbstractReservation(models.Model):
 class AbstractReservationResidence(AbstractReservation):
     check_in_date = models.DateField()
     check_out_date = models.DateField()
-
-    def check_date(self):
-        return self.check_out_date > self.check_in_date >= timezone.now().date()
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        if self.check_date():
-            return super().save(force_insert, force_update, using, update_fields)
-        raise exceptions.ValidationError("invalid dates")
 
     class Meta:
         abstract = True

@@ -3,7 +3,7 @@ from django.db import models
 
 from reservations.base_models.address import AbstractAddress
 from reservations.base_models.rate import AbstractRate
-from reservations.base_models.reservation import AbstractReservationResidence
+from reservations.base_models.reservation import AbstractReservationResidence, ReservedStatus
 from reservations.base_models.residence import AbstractResidence
 from reservations.base_models.room import AbstractRoom
 from utlis.validation_zip_code import validation_zip_code
@@ -49,6 +49,7 @@ class HotelReservation(AbstractReservationResidence):
 
     class Meta:
         constraints = [models.UniqueConstraint(
+            condition=models.Q(reserved_status__in=[ReservedStatus.INITIAL, ReservedStatus.RESERVED]),
             fields=('user', 'room'), name='unique_user_hotel_room')]
 
 
