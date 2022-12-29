@@ -3,7 +3,8 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 from rest_framework import serializers, exceptions
 
-from hotel.models import Hotel, HotelAddress, HotelRating, HotelRoom, HotelReservation
+from comments.models import CommentStatus
+from hotel.models import Hotel, HotelAddress, HotelRating, HotelRoom, HotelReservation, HotelComment
 from reservations.base_models.reservation import ReservedStatus
 from reservations.base_models.residence import ResidenceStatus
 from reservations.base_models.room import RoomStatus
@@ -22,11 +23,49 @@ class HotelAddressSerializer(serializers.ModelSerializer):
         extra_kwargs = {'phone': {'required': False}}
 
 
+# ---------------------------------------------HotelRate----------------------------------------------------------------
+
 class HotelRateSerializer(serializers.ModelSerializer):
     class Meta:
         model = HotelRating
         fields = ('id', 'hotel', 'user', 'rate',)
 
+
+# ---------------------------------------------HotelComment----------------------------------------------------------------
+class HotelCommentForCreatedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HotelComment
+        fields = ('id', 'hotel', 'user', 'status', 'parent', 'comment_body', 'validated_by')
+        extra_kwargs = {"parent": {"required": False}}
+
+
+class HotelCommentForUpdatedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HotelComment
+        fields = ('id', 'status', 'comment_body', 'validated_by')
+        extra_kwargs = {"validated_by": {"required": False, "read_only": True}}
+
+    def update(self, instance, validated_data):
+        if instance.status in [CommentStatus.REJECTED, CommentStatus.DELETED]:
+            raise exceptions.ValidationError("Comment REJECTED / DELETED cant be update")
+
+        if instance.comment_body == validated_data['comment_body']:
+            return instance
+
+        try:
+            instance.comment_body = validated_data['comment_body']
+            instance.status = CommentStatus.CREATED
+            instance.validated_by = None
+
+        except (ValueError, TypeError) as e:
+            raise exceptions.ValidationError("invalid data -> {}".format(e))
+
+        instance.save()
+
+        return instance
+
+
+# ---------------------------------------------Hotel--------------------------------------------------------------------
 
 class HotelSerializer(serializers.ModelSerializer):
     address = HotelAddressSerializer(many=False)
@@ -264,3 +303,30 @@ def check_and_update_if_hotel_full(hotel_id):
     if not free_room.exists():
         return Hotel.objects.filter(id=hotel_id).update(residence_status=ResidenceStatus.FULL)
     return
+
+
+@transaction.atomic
+def update_hotel_comment(request, **kwargs):
+    comment_id = kwargs['pk']
+    if 'status' in request.data:
+        status = request.data['status']
+        try:
+            status = CommentStatus(status)
+        except (ValueError, TypeError) as e:
+            raise exceptions.ValidationError("invalid data -> {}".format(e))
+    else:
+        raise exceptions.ValidationError("payment_status required")
+
+    if status not in [CommentStatus.APPROVED, CommentStatus.REJECTED]:
+        raise exceptions.ValidationError("invalid status :{}".format(status))
+
+    try:
+        comment = HotelComment.objects.filter(id=comment_id, status=CommentStatus.CREATED).get()
+        comment.status = status
+        comment.validated_by = request.user
+        comment.save()
+
+    except HotelComment.DoesNotExist:
+        raise exceptions.ValidationError("payment_status required")
+
+    return HotelCommentForUpdatedSerializer(comment).data

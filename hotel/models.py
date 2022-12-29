@@ -1,6 +1,7 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
+from comments.models import AbstractComment, CommentStatus
 from reservations.base_models.address import AbstractAddress
 from reservations.base_models.rate import AbstractRate
 from reservations.base_models.reservation import AbstractReservationResidence
@@ -79,3 +80,16 @@ class HotelAddress(AbstractAddress):
 
     def __str__(self):
         return "{} : {}".format(self.country, self.city)
+
+
+class HotelComment(AbstractComment):
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name="hotel_comment")
+
+    def publish(self):
+        self.objects.update(status=CommentStatus.APPROVED)
+
+    def get_parent(self):
+        return self.parent_hotelcomments.filter(status=CommentStatus.APPROVED).all()
+
+    def __str__(self):
+        return "{}: {}".format(self.hotel.name, self.comment_body[:10])
