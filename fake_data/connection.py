@@ -28,7 +28,7 @@ info = cursor.fetchall()
 cursor.execute("select id from reservations_price")
 price_ids = cursor.fetchall()
 
-insert_room(conn, info, price_ids, True)
+insert_room(conn, info, price_ids, False)
 
 conn.commit()
 conn.close()

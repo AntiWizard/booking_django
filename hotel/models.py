@@ -3,7 +3,7 @@ from django.db import models
 
 from reservations.base_models.address import AbstractAddress
 from reservations.base_models.rate import AbstractRate
-from reservations.base_models.reservation import AbstractReservationResidence, ReservedStatus
+from reservations.base_models.reservation import AbstractReservationResidence
 from reservations.base_models.residence import AbstractResidence
 from reservations.base_models.room import AbstractRoom
 from utlis.validation_zip_code import validation_zip_code
@@ -22,6 +22,11 @@ class Hotel(AbstractResidence):
 
     def __str__(self):
         return self.name
+
+    @property
+    def average_rating(self):
+        rate = HotelRating.objects.filter(hotel=self).all().aggregate(avg=models.Avg('rate'))
+        return rate.get('avg') or 5
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=('name', 'residence_status'),
@@ -46,11 +51,11 @@ class HotelReservation(AbstractReservationResidence):
     def __str__(self):
         return "{} - {} -> from:{} - to:{}".format(self.user.phone, self.room.hotel.name, self.check_in_date,
                                                    self.check_out_date)
-
-    class Meta:
-        constraints = [models.UniqueConstraint(
-            condition=models.Q(reserved_status__in=[ReservedStatus.INITIAL, ReservedStatus.RESERVED]),
-            fields=('user', 'room'), name='unique_user_hotel_room')]
+    #
+    # class Meta:
+    #     constraints = [models.UniqueConstraint(
+    #         condition=models.Q(reserved_status__in=[ReservedStatus.INITIAL, ReservedStatus.RESERVED]),
+    #         fields=('user', 'room'), name='unique_user_hotel_room')]
 
 
 class HotelRating(AbstractRate):

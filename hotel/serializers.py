@@ -5,6 +5,7 @@ from rest_framework import serializers, exceptions
 
 from hotel.models import Hotel, HotelAddress, HotelRating, HotelRoom, HotelReservation
 from reservations.base_models.reservation import ReservedStatus
+from reservations.base_models.residence import ResidenceStatus
 from reservations.base_models.room import RoomStatus
 from reservations.models import Payment, PaymentStatus
 from reservations.serializers import LocationSerializer, PriceByCurrencySerializer, PaymentSerializer
@@ -32,7 +33,9 @@ class HotelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Hotel
-        fields = ('id', 'name', 'description', 'residence_status', 'address', 'star', 'room_count', 'avatar')
+        fields = ('id', 'name', 'description', 'average_rating', 'residence_status', 'address', 'star', 'room_count',
+                  'avatar')
+        extra_kwargs = {"average_rating": {"required": False, "read_only": True}}
 
     @transaction.atomic
     def create(self, validated_data):
@@ -43,8 +46,8 @@ class HotelSerializer(serializers.ModelSerializer):
 
         except (ValueError, TypeError) as e:
             raise exceptions.ValidationError("invalid data -> {}".format(e))
-        except Exception as e:
-            raise exceptions.ValidationError("Internal server error -> {}".format(e))
+        # except Exception as e:
+        #     raise exceptions.ValidationError("Internal server error -> {}".format(e))
 
         hotel = Hotel.objects.create(address=address, **validated_data)
 
@@ -60,8 +63,8 @@ class HotelSerializer(serializers.ModelSerializer):
 
         except (ValueError, TypeError) as e:
             raise exceptions.ValidationError("invalid data -> {}".format(e))
-        except Exception as e:
-            raise exceptions.ValidationError("Internal server error -> {}".format(e))
+        # except Exception as e:
+        #     raise exceptions.ValidationError("Internal server error -> {}".format(e))
 
         instance.save()
 
@@ -73,8 +76,8 @@ class HotelSerializer(serializers.ModelSerializer):
 
             except (ValueError, TypeError) as e:
                 raise exceptions.ValidationError("invalid data -> {}".format(e))
-            except Exception as e:
-                raise exceptions.ValidationError("Internal server error -> {}".format(e))
+            # except Exception as e:
+            #     raise exceptions.ValidationError("Internal server error -> {}".format(e))
 
             hotel_address.save()
             instance.address = hotel_address
@@ -103,8 +106,8 @@ class HotelRoomSerializer(serializers.ModelSerializer):
 
         except (ValueError, TypeError) as e:
             raise exceptions.ValidationError("invalid data -> {}".format(e))
-        except Exception as e:
-            raise exceptions.ValidationError("Internal server error -> {}".format(e))
+        # except Exception as e:
+        #     raise exceptions.ValidationError("Internal server error -> {}".format(e))
 
         hotel_room = HotelRoom.objects.create(price_per_night=price, **validated_data)
 
@@ -195,15 +198,15 @@ class HotelReservationSerializer(serializers.ModelSerializer):
             raise exceptions.ValidationError("invalid data -> {}".format(e))
         except IntegrityError:
             raise exceptions.ValidationError("Each user has only one record reserved room!")
-        except Exception as e:
-            raise exceptions.ValidationError("Internal server error -> {}".format(e))
+        # except Exception as e:
+        #     raise exceptions.ValidationError("Internal server error -> {}".format(e))
         return reserve
 
 
 # ---------------------------------------------ResultReservation-------------------------------------------------------
 
 @transaction.atomic
-def update_reservation(request, *args, **kwargs):
+def update_reservation(request, **kwargs):
     reserved_key = kwargs['reserved_key']
     if 'payment_status' in request.data:
         status = request.data['payment_status']
@@ -229,15 +232,16 @@ def update_reservation(request, *args, **kwargs):
             payment.payment_status = payment_status
             payment.save()
         else:
-            raise exceptions.ValidationError("Payment for this reserved: {} invalid".format(reserved_key))
+            raise exceptions.ValidationError("Payment for this reserved: {} was invalid".format(reserved_key))
 
         room = reserve.room
         if reserved_status == ReservedStatus.RESERVED:
             if room.status == RoomStatus.FREE:
                 room.status = RoomStatus.RESERVED
                 room.save()
+                check_and_update_if_hotel_full(room.hotel.id)
             else:
-                raise exceptions.ValidationError("Room for this reserved: {} invalid".format(reserved_key))
+                raise exceptions.ValidationError("Room for this reserved: {} was invalid".format(reserved_key))
 
     except Payment.DoesNotExist:
         raise exceptions.ValidationError("Payment with this reserved_key :{} not existed".format(reserved_key))
@@ -249,7 +253,14 @@ def update_reservation(request, *args, **kwargs):
         raise exceptions.ValidationError("Error: {}".format(e))
     except (ValueError, TypeError) as e:
         raise exceptions.ValidationError("invalid data -> {}".format(e))
-    except Exception as e:
-        raise exceptions.ValidationError("Internal server error -> {}".format(e))
+    # except Exception as e:
+    #     raise exceptions.ValidationError("Internal server error -> {}".format(e))
 
     return {"room": HotelRoomSerializer(room).data, "reserve": HotelReservationSerializer(reserve).data}
+
+
+def check_and_update_if_hotel_full(hotel_id):
+    free_room = HotelRoom.objects.filter(hotel__id=hotel_id, status=RoomStatus.FREE)
+    if not free_room.exists():
+        return Hotel.objects.filter(id=hotel_id).update(residence_status=ResidenceStatus.FULL)
+    return
