@@ -34,7 +34,7 @@ class Hotel(AbstractResidence):
     @property
     def price_per_night(self):
         price = HotelRoom.objects.filter(hotel=self).first()
-        return price.price or 0
+        return price.price or -1
 
     class Meta:
         ordering = ['-star']

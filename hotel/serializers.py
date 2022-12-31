@@ -288,7 +288,7 @@ def update_reservation(request, **kwargs):
     except (ValueError, TypeError) as e:
         raise exceptions.ValidationError("invalid data -> {}".format(e))
 
-    return {"room": HotelRoomSerializer(room).data, "reserve": HotelReservationSerializer(reserve).data}
+    return {"reserve": HotelReservationSerializer(reserve).data}
 
 
 def check_and_update_if_hotel_full(hotel_id):

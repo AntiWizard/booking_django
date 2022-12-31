@@ -12,8 +12,8 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    'check_raservation': {
-        'task': 'hotel.tasks.check_raservation',
-        'schedule': crontab(minute="*"),
+    'check_reservation': {
+        'task': 'hotel.tasks.check_reservation',
+        'schedule': crontab(minute="30", hour="12"),
     },
 }

@@ -16,8 +16,8 @@ class AbstractAddress(models.Model):
     location = models.OneToOneField("reservations.Location", on_delete=models.PROTECT, null=True)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        self.country = self.country.upper()
-        self.city = self.city.capitalize()
+        self.country = self.country.upper() if self.country else None
+        self.city = self.city.capitalize() if self.country else None
         super().save(force_insert, force_update, using, update_fields)
 
     def __str__(self):
