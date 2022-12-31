@@ -1,4 +1,5 @@
 celery==5.2.7
+django-celery-beat==2.4.0
 Django==4.1.4
 django-silk==5.0.2
 djangorestframework==3.14.0

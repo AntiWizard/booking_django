@@ -1,15 +1,14 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
-from comments.models import AbstractComment, CommentStatus
 from reservations.base_models.address import AbstractAddress
+from reservations.base_models.comment import AbstractComment
 from reservations.base_models.gallery import AbstractGallery, AbstractImage
 from reservations.base_models.rate import AbstractRate
-from reservations.base_models.reservation import AbstractReservationResidence
+from reservations.base_models.reservation import AbstractReservationResidence, ReservedStatus
 from reservations.base_models.residence import AbstractResidence
 from reservations.base_models.room import AbstractRoom
 from utlis.location_images import get_hotel_images_upload_location
-from utlis.validation_zip_code import validation_zip_code
 
 
 # ---------------------------------------------Hotel--------------------------------------------------------------------
@@ -66,11 +65,11 @@ class HotelReservation(AbstractReservationResidence):
     def __str__(self):
         return "{} - {} -> from:{} - to:{}".format(self.user.phone, self.room.hotel.name, self.check_in_date,
                                                    self.check_out_date)
-    #
-    # class Meta:
-    #     constraints = [models.UniqueConstraint(
-    #         condition=models.Q(reserved_status__in=[ReservedStatus.INITIAL, ReservedStatus.RESERVED]),
-    #         fields=('user', 'room'), name='unique_user_hotel_room')]
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            condition=models.Q(reserved_status__in=[ReservedStatus.INITIAL, ReservedStatus.RESERVED]),
+            fields=('user', 'room'), name='unique_user_hotel_room')]
 
 
 # ----------------------------------------------HotelRate---------------------------------------------------------------
@@ -90,27 +89,13 @@ class HotelRating(AbstractRate):
 
 
 class HotelAddress(AbstractAddress):
-    zip_code = models.BigIntegerField(validators=[validation_zip_code], blank=True, null=True)
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        self.country = self.country.upper()
-        self.city = self.city.capitalize()
-        super().save(force_insert, force_update, using, update_fields)
-
-    def __str__(self):
-        return "{} : {}".format(self.country, self.city)
+    pass
 
 
 # ----------------------------------------------HotelComment------------------------------------------------------------
 
 class HotelComment(AbstractComment):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name="hotel_comment")
-
-    def publish(self):
-        self.objects.update(status=CommentStatus.APPROVED)
-
-    def get_parent(self):
-        return self.parent_hotelcomments.filter(status=CommentStatus.APPROVED).all()
 
     def __str__(self):
         return "{}: {}".format(self.hotel.name, self.comment_body[:10])

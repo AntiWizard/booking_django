@@ -3,9 +3,9 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 from rest_framework import serializers, exceptions
 
-from comments.models import CommentStatus
-from hotel.models import Hotel, HotelAddress, HotelRating, HotelRoom, HotelReservation, HotelComment, HotelGallery, \
-    HotelImage
+from hotel.models import Hotel, HotelRating, HotelRoom, HotelReservation, HotelComment, HotelGallery, \
+    HotelImage, HotelAddress
+from reservations.base_models.comment import CommentStatus
 from reservations.base_models.reservation import ReservedStatus
 from reservations.base_models.residence import ResidenceStatus
 from reservations.base_models.room import RoomStatus

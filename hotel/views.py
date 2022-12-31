@@ -5,11 +5,11 @@ from rest_framework.permissions import IsAdminUser, AllowAny, SAFE_METHODS, IsAu
 from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from comments.models import CommentStatus
 from hotel.models import Hotel, HotelRoom, HotelReservation, HotelRating, HotelComment, HotelGallery, HotelImage
 from hotel.serializers import HotelSerializer, HotelRoomSerializer, HotelReservationSerializer, update_reservation, \
     HotelRateSerializer, HotelCommentForCreatedSerializer, HotelCommentForUpdatedSerializer, update_hotel_comment, \
     HotelGallerySerializer, HotelImageSerializer
+from reservations.base_models.comment import CommentStatus
 from reservations.base_models.reservation import ReservedStatus
 from reservations.base_models.residence import ResidenceStatus
 from reservations.models import Payment, PaymentStatus

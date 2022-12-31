@@ -45,9 +45,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'silk',
     'drf_spectacular',
+    'django_celery_beat',
 
     'users.apps.UsersConfig',
-    'comments.apps.CommentsConfig',
     'reservations.apps.ReservationConfig',
 
     'hotel.apps.HotelConfig',

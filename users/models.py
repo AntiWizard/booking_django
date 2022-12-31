@@ -5,7 +5,6 @@ from django.core.validators import RegexValidator
 from django.db import models, transaction
 
 from reservations.base_models.address import AbstractAddress
-from utlis.validation_zip_code import validation_zip_code
 
 
 class CustomUserManager(UserManager):
@@ -87,7 +86,6 @@ class User(AbstractUser):
 
 
 class UserAddress(AbstractAddress):
-    zip_code = models.BigIntegerField(validators=[validation_zip_code], blank=True, null=True)
     location = None
 
     def __str__(self):
