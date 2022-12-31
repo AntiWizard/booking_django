@@ -12,8 +12,8 @@ class AbstractRoom(models.Model):
     capacity = models.PositiveSmallIntegerField()
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=15, choices=RoomStatus.choices, default=RoomStatus.FREE)
-    price_per_night = models.ForeignKey("reservations.Price", on_delete=models.DO_NOTHING,
-                                        related_name='%(class)ss_price')
+    price = models.ForeignKey("reservations.Price", on_delete=models.DO_NOTHING,
+                              related_name='%(class)ss_price')
     is_valid = models.BooleanField(default=True)
     created_time = models.DateTimeField(auto_now_add=True)
     modified_time = models.DateTimeField(auto_now=True)

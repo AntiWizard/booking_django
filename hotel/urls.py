@@ -2,7 +2,8 @@ from django.urls import path
 
 from hotel.views import ListCreateHotelAPIView, DetailHotelAPIView, ListCreateHotelRoomAPIView, DetailHotelRoomAPIView, \
     ListCreateHotelReservationAPIView, DetailHotelReservationAPIView, PaymentReservationAPIView, CreateHotelRateAPIView, \
-    DetailHotelRateAPIView, ListCreateHotelCommentAPIView, DetailHotelCommentAPIView, CheckHotelCommentAPIView
+    DetailHotelRateAPIView, ListCreateHotelCommentAPIView, DetailHotelCommentAPIView, CheckHotelCommentAPIView, \
+    ListCreateHotelGalleryAPIView, DetailHotelGalleryAPIView, ListCreateHotelImageAPIView, DetailHotelImageAPIView
 
 urlpatterns = [
     path('hotel/', ListCreateHotelAPIView.as_view(), name='hotel'),
@@ -25,4 +26,11 @@ urlpatterns = [
 
     path('hotel/comment/<int:pk>/checking/', CheckHotelCommentAPIView.as_view(), name='hotel-comment'),
 
+    path('hotel/<str:name>/gallery/', ListCreateHotelGalleryAPIView.as_view(), name='hotel-gallery'),
+    path('hotel/<str:name>/gallery/<int:pk>/', DetailHotelGalleryAPIView.as_view(), name='hotel-gallery-detail'),
+
+    path('hotel/<str:hotel_name>/gallery/<str:gallery_name>/image/', ListCreateHotelImageAPIView.as_view(),
+         name='hotel-image'),
+    path('hotel/<str:hotel_name>/gallery/<str:gallery_name>/image/<int:pk>/', DetailHotelImageAPIView.as_view(),
+         name='hotel-image-detail'),
 ]

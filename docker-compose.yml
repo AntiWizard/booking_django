@@ -1,0 +1,41 @@
+#docker compose up -d
+services:
+  backend:
+    build: .
+    container_name: booking
+    volumes:
+      - "/home/ali/Desktop/my_volume/static:/project/static"
+      - "/home/ali/Desktop/my_volume/media:/project/media"
+    ports:
+      - 8000:8000
+    env_file:
+      - ./.env
+    command: sh -c "python manage.py migrate &&
+      python manage.py collectstatic --no-input &&
+      gunicorn -c gunicorn.conf.py"
+    #gunicorn -c gunicorn.conf.py
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - 6380:6379
+
+  nginx:
+    build: ./confs/nginx
+    container_name: nginx
+    volumes:
+      - "/home/ali/Desktop/my_volume/static:/project/static"
+      - "/home/ali/Desktop/my_volume/media:/project/media"
+    ports:
+      - 80:80
+    depends_on:
+      - backend
+
+#  db:
+#    image: postgres
+#    restart: always
+#    environment:
+#      POSTGRES_PASSWORD: example
+#    volumes:
+#      - pgdata:/var/lib/postgresql/data

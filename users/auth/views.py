@@ -15,7 +15,7 @@ from users.tasks import send_sms_to_user
 from utlis.auth.otp_generator import otp_generator
 
 
-class GenerateOTP(generics.ListAPIView):  # TODO logic -> serializer
+class GenerateOTP(generics.ListAPIView):
     serializer_class = OTPSerializer
     throttle_classes = [AnonRateThrottle]
 
@@ -36,7 +36,7 @@ class GenerateOTP(generics.ListAPIView):  # TODO logic -> serializer
         return Response(serializer.data)
 
 
-class LoginUserAPIView(generics.CreateAPIView):  # TODO logic -> serializer
+class LoginUserAPIView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = LoginSerializer
     permission_classes = [IsAnonymous]

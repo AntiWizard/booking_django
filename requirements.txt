@@ -1,0 +1,13 @@
+celery==5.2.7
+Django==4.1.4
+django-silk==5.0.2
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.2.2
+drf-spectacular==0.25.0
+hiredis==2.1.0
+Pillow==9.3.0
+psycopg2-binary==2.9.5
+python-decouple==3.6
+redis==4.4.0
+requests==2.28.1
+gunicorn

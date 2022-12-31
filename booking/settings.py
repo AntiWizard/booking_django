@@ -27,7 +27,9 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', cast=bool, default=False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='*')
+
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', cast=Csv(), default="http://*")
 
 # Application definition
 
@@ -49,12 +51,8 @@ INSTALLED_APPS = [
     'reservations.apps.ReservationConfig',
 
     'hotel.apps.HotelConfig',
-    'apartment.apps.ApartmentConfig',
 
     'airplane.apps.AirplaneConfig',
-    'bus.apps.BusConfig',
-    'ship.apps.ShipConfig',
-
 ]
 
 MIDDLEWARE = [
@@ -95,18 +93,22 @@ WSGI_APPLICATION = 'booking.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'test',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASS'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
     }
 }
+
+REDIS_HOST = config('REDIS_HOST', default="127.0.0.1")
+REDIS_PORT = config('REDIS_PORT', default="6379")
 
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}',
+        'KEY_PREFIX': 'booking',
         'TIMEOUT': None
     },
 }

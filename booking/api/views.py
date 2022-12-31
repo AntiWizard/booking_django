@@ -15,8 +15,5 @@ def api_root(request):
 def api_views(request):
     return Response({
         'hotel': reverse('hotel', request=request),
-        'apartment': reverse('apartment', request=request),
         'airplane': reverse('airplane', request=request),
-        'bus': reverse('bus', request=request),
-        'ship': reverse('ship', request=request),
     })

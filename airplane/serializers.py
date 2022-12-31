@@ -120,7 +120,7 @@ class AirplaneSeatSerializer(serializers.ModelSerializer):
 
         if price_seat:
             if currency:
-                currency_room = Currency.objects.filter(id=instance.price_per_night.currency.id).get()
+                currency_room = Currency.objects.filter(id=instance.price.currency.id).get()
                 try:
                     for attr, value in currency.items():
                         setattr(currency_room, attr, value)

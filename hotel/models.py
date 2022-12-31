@@ -3,15 +3,18 @@ from django.db import models
 
 from comments.models import AbstractComment, CommentStatus
 from reservations.base_models.address import AbstractAddress
+from reservations.base_models.gallery import AbstractGallery, AbstractImage
 from reservations.base_models.rate import AbstractRate
 from reservations.base_models.reservation import AbstractReservationResidence
 from reservations.base_models.residence import AbstractResidence
 from reservations.base_models.room import AbstractRoom
+from utlis.location_images import get_hotel_images_upload_location
 from utlis.validation_zip_code import validation_zip_code
 
 
+# ---------------------------------------------Hotel--------------------------------------------------------------------
+
 class Hotel(AbstractResidence):
-    avatar = models.ImageField(upload_to="", null=True, blank=True)
     star = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)], default=3)
     room_count = models.PositiveSmallIntegerField(default=100)
     address = models.OneToOneField('HotelAddress', on_delete=models.PROTECT, related_name='hotel_address')
@@ -29,10 +32,18 @@ class Hotel(AbstractResidence):
         rate = HotelRating.objects.filter(hotel=self).all().aggregate(avg=models.Avg('rate'))
         return rate.get('avg') or 5
 
+    @property
+    def price_per_night(self):
+        price = HotelRoom.objects.filter(hotel=self).first()
+        return price.price or 0
+
     class Meta:
+        ordering = ['-star']
         constraints = [models.UniqueConstraint(fields=('name', 'residence_status'),
                                                name='unique_hotel_name_residence_status')]
 
+
+# ----------------------------------------------HotelRoom---------------------------------------------------------------
 
 class HotelRoom(AbstractRoom):
     hotel = models.ForeignKey(Hotel, related_name='room', on_delete=models.CASCADE)
@@ -42,9 +53,12 @@ class HotelRoom(AbstractRoom):
         return "{}: {}".format(self.hotel.name, self.number)
 
     class Meta:
+        ordering = ["price"]
         constraints = [models.UniqueConstraint(
             fields=('hotel', 'number'), name='unique_hotel_number_seat')]
 
+
+# ----------------------------------------------HotelReservation--------------------------------------------------------
 
 class HotelReservation(AbstractReservationResidence):
     room = models.ForeignKey(HotelRoom, on_delete=models.PROTECT, related_name="reservation")
@@ -59,6 +73,8 @@ class HotelReservation(AbstractReservationResidence):
     #         fields=('user', 'room'), name='unique_user_hotel_room')]
 
 
+# ----------------------------------------------HotelRate---------------------------------------------------------------
+
 class HotelRating(AbstractRate):
     hotel = models.ForeignKey(Hotel, related_name='rate', on_delete=models.CASCADE)
 
@@ -68,6 +84,9 @@ class HotelRating(AbstractRate):
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=('hotel', 'user', 'rate'), name='unique_hotel_user_rate')]
+
+
+# ----------------------------------------------HotelAddress------------------------------------------------------------
 
 
 class HotelAddress(AbstractAddress):
@@ -82,6 +101,8 @@ class HotelAddress(AbstractAddress):
         return "{} : {}".format(self.country, self.city)
 
 
+# ----------------------------------------------HotelComment------------------------------------------------------------
+
 class HotelComment(AbstractComment):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name="hotel_comment")
 
@@ -93,3 +114,22 @@ class HotelComment(AbstractComment):
 
     def __str__(self):
         return "{}: {}".format(self.hotel.name, self.comment_body[:10])
+
+
+# ----------------------------------------------HotelGallery------------------------------------------------------------
+
+class HotelGallery(AbstractGallery):
+    hotel = models.ForeignKey(Hotel, on_delete=models.PROTECT, related_name="hotel_gallery")
+
+
+class HotelImage(AbstractImage):
+    image = models.ImageField(upload_to=get_hotel_images_upload_location)
+    gallery = models.ForeignKey(HotelGallery, on_delete=models.CASCADE, related_name="hotel_image")
+
+    def __str__(self):
+        return self.image.url
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            condition=models.Q(is_main=True),
+            fields=('gallery', 'is_main'), name='just_one_main_image')]

@@ -6,13 +6,18 @@ from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from comments.models import CommentStatus
-from hotel.models import Hotel, HotelRoom, HotelReservation, HotelRating, HotelComment
+from hotel.models import Hotel, HotelRoom, HotelReservation, HotelRating, HotelComment, HotelGallery, HotelImage
 from hotel.serializers import HotelSerializer, HotelRoomSerializer, HotelReservationSerializer, update_reservation, \
-    HotelRateSerializer, HotelCommentForCreatedSerializer, HotelCommentForUpdatedSerializer, update_hotel_comment
+    HotelRateSerializer, HotelCommentForCreatedSerializer, HotelCommentForUpdatedSerializer, update_hotel_comment, \
+    HotelGallerySerializer, HotelImageSerializer
 from reservations.base_models.reservation import ReservedStatus
 from reservations.base_models.residence import ResidenceStatus
 from reservations.models import Payment, PaymentStatus
 from users.permissions import IsOwner
+from utlis.check_obj import get_hotel, get_room, get_gallery
+
+
+# ---------------------------------------------Hotel--------------------------------------------------------------------
 
 
 class ListCreateHotelAPIView(generics.ListCreateAPIView):
@@ -35,13 +40,14 @@ class DetailHotelAPIView(generics.RetrieveUpdateDestroyAPIView):
     throttle_classes = [UserRateThrottle]
 
     def get_queryset(self):
-        if self.request.method == SAFE_METHODS:
+        if self.request.method in SAFE_METHODS:
             return Hotel.objects.filter(is_valid=True).all()
         else:
             return Hotel.objects.all()
 
     def get_object(self):
-        obj = generics.get_object_or_404(self.queryset, name__iexact=self.kwargs['name'])
+        name = self.kwargs.get('name', None).replace('-', ' ')
+        obj = get_hotel(name)
 
         self.check_object_permissions(self.request, obj)
         return obj
@@ -67,7 +73,9 @@ class ListCreateHotelRoomAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
-        return HotelRoom.objects.filter(hotel__name__iexact=name, is_valid=True).all().select_related('hotel')
+        hotel = get_hotel(name)
+
+        return HotelRoom.objects.filter(hotel=hotel, is_valid=True).all().select_related('hotel')
 
     def get_permissions(self):
         if self.request.method in SAFE_METHODS:
@@ -76,18 +84,13 @@ class ListCreateHotelRoomAPIView(generics.ListCreateAPIView):
             return [IsAdminUser()]
 
     def create(self, request, *args, **kwargs):
-        try:
-            name = self.kwargs.get('name', None).replace('-', ' ')
-            hotel = Hotel.objects.filter(name__iexact=name, is_valid=True).get()
-        except Hotel.DoesNotExist:
-            raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
 
         if isinstance(request.data, QueryDict):
             request.data._mutable = True
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
             request.data._mutable = False
         else:
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
 
         return super().create(request, *args, **kwargs)
 
@@ -101,30 +104,26 @@ class DetailHotelRoomAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
+        hotel = get_hotel(name)
+
         if self.request.method in SAFE_METHODS:
-            return HotelRoom.objects.filter(hotel__name__iexact=name, is_valid=True).all().select_related('hotel')
+            return HotelRoom.objects.filter(hotel=hotel, is_valid=True).all().select_related('hotel')
         else:
-            return HotelRoom.objects.filter(hotel__name__iexact=name).all().select_related('hotel')
+            return HotelRoom.objects.filter(hotel=hotel).all().select_related('hotel')
 
     def get_permissions(self):
-        if self.request.method == SAFE_METHODS:
+        if self.request.method in SAFE_METHODS:
             return [AllowAny()]
         else:
             return [IsAdminUser()]
 
     def update(self, request, *args, **kwargs):
-        try:
-            name = self.kwargs.get('name', None).replace('-', ' ')
-            hotel = Hotel.objects.filter(name__iexact=name, is_valid=True).get()
-        except Hotel.DoesNotExist:
-            raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
-
         if isinstance(request.data, QueryDict):
             request.data._mutable = True
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
             request.data._mutable = False
         else:
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
 
         return super().update(request, *args, **kwargs)
 
@@ -144,30 +143,24 @@ class ListCreateHotelReservationAPIView(generics.CreateAPIView):
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
-        room_number = self.kwargs.get('number', None)
+        hotel = get_hotel(name)
 
-        return HotelReservation.objects.filter(room__number=room_number, room__hotel__name__iexact=name,
-                                               is_valid=True).all().select_related('room', 'room__hotel')
+        room_number = self.kwargs.get('number', None)
+        room = get_room(room_number, hotel)
+
+        return HotelReservation.objects.filter(room=room, is_valid=True).all().select_related('room', 'room__hotel')
 
     def create(self, request, *args, **kwargs):
-        try:
-            name = self.kwargs.get('name', None).replace('-', ' ')
-            hotel = Hotel.objects.filter(name__iexact=name, is_valid=True).get()
+        name = self.kwargs.get('name', None).replace('-', ' ')
+        hotel = get_hotel(name)
 
-            if hotel.residence_status == ResidenceStatus.FULL:
-                raise exceptions.ValidationError("This hotel has full!")
-            elif hotel.residence_status == ResidenceStatus.PROBLEM:
-                raise exceptions.ValidationError("This hotel has problem for reservation!")
+        if hotel.residence_status == ResidenceStatus.FULL:
+            raise exceptions.ValidationError("This hotel has full!")
+        elif hotel.residence_status == ResidenceStatus.PROBLEM:
+            raise exceptions.ValidationError("This hotel has problem for reservation!")
 
-            room_number = self.kwargs.get('number', None)
-            room = HotelRoom.objects.filter(number=room_number, hotel=hotel, is_valid=True).get()
-
-        except Hotel.DoesNotExist:
-            raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
-        except HotelRoom.DoesNotExist:
-            raise exceptions.ValidationError("Room Dose not exist with this number in url!")
-        except Exception as e:
-            raise exceptions.ValidationError("Error :{} not existed".format(e))
+        room_number = self.kwargs.get('number', None)
+        room = get_room(room_number, hotel)
 
         if isinstance(request.data, QueryDict):
             request.data._mutable = True
@@ -190,22 +183,18 @@ class DetailHotelReservationAPIView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'reserved_key'
 
     def get_queryset(self):
+
         if self.request.method in SAFE_METHODS:
             return HotelReservation.objects.filter(is_valid=True).all().select_related('room', 'room__hotel')
         else:
             return HotelReservation.objects.all().select_related('room', 'room__hotel')
 
     def update(self, request, *args, **kwargs):
-        try:
-            name = self.kwargs.get('name', None).replace('-', ' ')
-            hotel = Hotel.objects.filter(name__iexact=name).get()
+        name = self.kwargs.get('name', None).replace('-', ' ')
+        hotel = get_hotel(name)
 
-            room_number = self.kwargs.get('number', None)
-            room = HotelRoom.objects.filter(number=room_number, hotel=hotel, is_valid=True).get()
-        except Hotel.DoesNotExist:
-            raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
-        except HotelRoom.DoesNotExist:
-            raise exceptions.ValidationError("Room Dose not exist with this number in url!")
+        room_number = self.kwargs.get('number', None)
+        room = get_room(room_number, hotel)
 
         if isinstance(request.data, QueryDict):
             request.data._mutable = True
@@ -254,24 +243,20 @@ class CreateHotelRateAPIView(generics.CreateAPIView):
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
-        return HotelRating.objects.filter(hotel__name__iexact=name, hotel__is_valid=True).all()
+        hotel = get_hotel(name)
+
+        return HotelRating.objects.filter(hotel=hotel).all()
 
     def create(self, request, *args, **kwargs):
-        try:
-            name = self.kwargs.get('name', None).replace('-', ' ')
-            hotel = Hotel.objects.filter(name__iexact=name, is_valid=True).get()
-
-        except Hotel.DoesNotExist:
-            raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
 
         if isinstance(request.data, QueryDict):
             request.data._mutable = True
             request.data['user'] = request.user.id
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
             request.data._mutable = False
         else:
             request.data['user'] = request.user.id
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
 
         return super(CreateHotelRateAPIView, self).create(request, *args, **kwargs)
 
@@ -290,27 +275,23 @@ class DetailHotelRateAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
+        hotel = get_hotel(name)
+
         if self.request.method in SAFE_METHODS:
-            return HotelRating.objects.filter(hotel__name__iexact=name, hotel__is_valid=True, is_valid=True).all()
+            return HotelRating.objects.filter(hotel=hotel, is_valid=True).all()
         else:
-            return HotelRating.objects.filter(hotel__name__iexact=name, hotel__is_valid=True).all()
+            return HotelRating.objects.filter(hotel=hotel).all()
 
     def update(self, request, *args, **kwargs):
-        try:
-            name = self.kwargs.get('name', None).replace('-', ' ')
-            hotel = Hotel.objects.filter(name__iexact=name).get()
-
-        except Hotel.DoesNotExist:
-            raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
 
         if isinstance(request.data, QueryDict):
             request.data._mutable = True
             request.data['user'] = request.user.id
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
             request.data._mutable = False
         else:
             request.data['user'] = request.user.id
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
 
         return super().update(request, *args, **kwargs)
 
@@ -319,7 +300,7 @@ class DetailHotelRateAPIView(generics.RetrieveUpdateDestroyAPIView):
         instance.save()
 
 
-# ---------------------------------------------HotelComment--------------------------------------------------------------
+# ---------------------------------------------HotelComment-------------------------------------------------------------
 
 
 class ListCreateHotelCommentAPIView(generics.ListCreateAPIView):
@@ -329,8 +310,9 @@ class ListCreateHotelCommentAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
-        return HotelComment.objects.filter(status=CommentStatus.APPROVED, hotel__name__iexact=name,
-                                           hotel__is_valid=True).all()
+        hotel = get_hotel(name)
+
+        return HotelComment.objects.filter(hotel=hotel, status=CommentStatus.APPROVED).all()
 
     def get_permissions(self):
         if self.request.method in SAFE_METHODS:
@@ -339,26 +321,20 @@ class ListCreateHotelCommentAPIView(generics.ListCreateAPIView):
             return [IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):
-        try:
-            name = self.kwargs.get('name', None).replace('-', ' ')
-            hotel = Hotel.objects.filter(name__iexact=name, is_valid=True).get()
-
-        except Hotel.DoesNotExist:
-            raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
 
         if isinstance(request.data, QueryDict):
             request.data._mutable = True
             request.data['user'] = request.user.id
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
             request.data._mutable = False
         else:
             request.data['user'] = request.user.id
-            request.data['hotel'] = hotel.id
+            request.data['hotel'] = self.get_queryset().first().hotel_id
 
         return super(ListCreateHotelCommentAPIView, self).create(request, *args, **kwargs)
 
 
-class DetailHotelCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
+class DetailHotelCommentAPIView(generics.RetrieveDestroyAPIView):
     serializer_class = HotelCommentForUpdatedSerializer
     authentication_classes = [JWTAuthentication]
     throttle_classes = [UserRateThrottle]
@@ -366,29 +342,13 @@ class DetailHotelCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
+        hotel = get_hotel(name)
+
         if self.request.method in SAFE_METHODS:
-            return HotelComment.objects.filter(hotel__name__iexact=name, hotel__is_valid=True).all()
+            return HotelComment.objects.filter(hotel=hotel, status=CommentStatus.APPROVED).all()
         else:
-            return HotelComment.objects.filter(hotel__name__iexact=name, hotel__is_valid=True).all()
-
-    def update(self, request, *args, **kwargs):
-        try:
-            name = self.kwargs.get('name', None).replace('-', ' ')
-            hotel = Hotel.objects.filter(name__iexact=name).get()
-
-        except Hotel.DoesNotExist:
-            raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
-
-        if isinstance(request.data, QueryDict):
-            request.data._mutable = True
-            request.data['user'] = request.user.id
-            request.data['hotel'] = hotel.id
-            request.data._mutable = False
-        else:
-            request.data['user'] = request.user.id
-            request.data['hotel'] = hotel.id
-
-        return super().update(request, *args, **kwargs)
+            return HotelComment.objects.filter(hotel=hotel,
+                                               status__in=[CommentStatus.CREATED, CommentStatus.APPROVED]).all()
 
     def perform_destroy(self, instance):
         instance.status = CommentStatus.DELETED
@@ -403,3 +363,117 @@ class CheckHotelCommentAPIView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         data = update_hotel_comment(request, **kwargs)
         return response.Response(data=data, status=status.HTTP_200_OK)
+
+
+# ---------------------------------------------HotelGallery-------------------------------------------------------------
+
+class ListCreateHotelGalleryAPIView(generics.ListCreateAPIView):
+    queryset = HotelGallery.objects.filter().all()
+    serializer_class = HotelGallerySerializer
+    authentication_classes = [JWTAuthentication]
+    throttle_classes = [UserRateThrottle]
+    permission_classes = [IsAdminUser]
+
+    def create(self, request, *args, **kwargs):
+        name = self.kwargs.get('name', None).replace('-', ' ')
+        hotel = get_hotel(name)
+
+        if isinstance(request.data, QueryDict):
+            request.data._mutable = True
+            request.data['hotel'] = hotel.id
+            request.data._mutable = False
+        else:
+            request.data['hotel'] = hotel.id
+
+        return super(ListCreateHotelGalleryAPIView, self).create(request, *args, **kwargs)
+
+
+class DetailHotelGalleryAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = HotelGallerySerializer
+    authentication_classes = [JWTAuthentication]
+    throttle_classes = [UserRateThrottle]
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        name = self.kwargs.get('name', None).replace('-', ' ')
+        hotel = get_hotel(name)
+
+        if self.request.method in SAFE_METHODS:
+            return HotelGallery.objects.filter(hotel=hotel, is_valid=True).all()
+        else:
+            return HotelGallery.objects.filter(hotel=hotel).all()
+
+    def update(self, request, *args, **kwargs):
+        if isinstance(request.data, QueryDict):
+            request.data._mutable = True
+            request.data['hotel'] = self.get_queryset().first().hotel_id
+            request.data._mutable = False
+        else:
+            request.data['hotel'] = self.get_queryset().first().hotel_id
+
+        return super().update(request, *args, **kwargs)
+
+    def perform_destroy(self, instance):
+        instance.is_valid = False
+        instance.save()
+
+
+# ---------------------------------------------HotelImage---------------------------------------------------------------
+
+class ListCreateHotelImageAPIView(generics.ListCreateAPIView):
+    queryset = HotelImage.objects.filter().all()
+    serializer_class = HotelImageSerializer
+    authentication_classes = [JWTAuthentication]
+    throttle_classes = [UserRateThrottle]
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        hotel_name = self.kwargs.get('hotel_name', None).replace('-', ' ')
+        hotel = get_hotel(hotel_name)
+
+        gallery_name = self.kwargs.get('gallery_name', None).replace('-', ' ')
+        gallery = get_gallery(gallery_name, hotel)
+
+        return HotelImage.objects.filter(gallery=gallery).all()
+
+    def create(self, request, *args, **kwargs):
+
+        if isinstance(request.data, QueryDict):
+            request.data._mutable = True
+            request.data['gallery'] = self.get_queryset().first().gallery_id
+            request.data._mutable = False
+        else:
+            request.data['gallery'] = self.get_queryset().first().gallery_id
+
+        try:
+            return super(ListCreateHotelImageAPIView, self).create(request, *args, **kwargs)
+        except IntegrityError:
+            raise exceptions.ValidationError("Just one image can be main for any galley!")
+
+
+class DetailHotelImageAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = HotelImage.objects.all()
+    serializer_class = HotelImageSerializer
+    authentication_classes = [JWTAuthentication]
+    throttle_classes = [UserRateThrottle]
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        hotel_name = self.kwargs.get('hotel_name', None).replace('-', ' ')
+        hotel = get_hotel(hotel_name)
+
+        gallery_name = self.kwargs.get('gallery_name', None).replace('-', ' ')
+        gallery = get_gallery(gallery_name, hotel)
+
+        return HotelImage.objects.filter(gallery=gallery).all()
+
+    def update(self, request, *args, **kwargs):
+
+        if isinstance(request.data, QueryDict):
+            request.data._mutable = True
+            request.data['gallery'] = self.get_queryset().first().gallery_id
+            request.data._mutable = False
+        else:
+            request.data['gallery'] = self.get_queryset().first().gallery_id
+
+        return super().update(request, *args, **kwargs)

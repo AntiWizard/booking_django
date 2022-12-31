@@ -24,7 +24,6 @@ from booking.api.views import api_root, api_views
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-
     path('', api_root),
     path('api/', api_views, name='api-view-list'),
 
@@ -33,11 +32,8 @@ urlpatterns = [
     path('api/', include('reservations.urls')),
 
     path('api/', include('hotel.urls')),
-    path('api/', include('apartment.urls')),
 
     path('api/', include('airplane.urls')),
-    path('api/', include('bus.urls')),
-    path('api/', include('ship.urls')),
 
     path('silk/', include('silk.urls', namespace='silk')),
 
