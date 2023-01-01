@@ -1,20 +1,16 @@
-from django.db.utils import IntegrityError
 from django.http import QueryDict
-from rest_framework import generics, exceptions, response, status
+from rest_framework import generics, response, status
 from rest_framework.permissions import IsAdminUser, AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from hotel.models import Hotel, HotelRoom, HotelReservation, HotelRating, HotelComment, HotelGallery, HotelImage
-from hotel.serializers import HotelSerializer, HotelRoomSerializer, HotelReservationSerializer, update_reservation, \
-    HotelRateSerializer, HotelCommentForCreatedSerializer, HotelCommentForUpdatedSerializer, update_hotel_comment, \
-    HotelGallerySerializer, HotelImageSerializer
+from hotel.serializers import *
 from reservations.base_models.comment import CommentStatus
 from reservations.base_models.reservation import ReservedStatus
 from reservations.base_models.residence import ResidenceStatus
 from reservations.models import Payment, PaymentStatus
 from users.permissions import IsOwner
-from utlis.check_obj import get_hotel, get_room, get_gallery
+from utlis.check_obj_hotel import get_hotel, get_room, get_gallery
 
 
 # ---------------------------------------------Hotel--------------------------------------------------------------------
@@ -92,7 +88,7 @@ class ListCreateHotelRoomAPIView(generics.ListCreateAPIView):
         else:
             request.data['hotel'] = self.get_queryset().first().hotel_id
 
-        return super().create(request, *args, **kwargs)
+        return super(ListCreateHotelRoomAPIView, self).create(request, *args, **kwargs)
 
 
 class DetailHotelRoomAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -125,7 +121,7 @@ class DetailHotelRoomAPIView(generics.RetrieveUpdateDestroyAPIView):
         else:
             request.data['hotel'] = self.get_queryset().first().hotel_id
 
-        return super().update(request, *args, **kwargs)
+        return super(DetailHotelRoomAPIView, self).update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         instance.is_valid = False
@@ -171,7 +167,7 @@ class ListCreateHotelReservationAPIView(generics.CreateAPIView):
             request.data['user'] = request.user.id
             request.data['room'] = room.id
 
-        return super().create(request, *args, **kwargs)
+        return super(ListCreateHotelReservationAPIView, self).create(request, *args, **kwargs)
 
 
 class DetailHotelReservationAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -205,7 +201,7 @@ class DetailHotelReservationAPIView(generics.RetrieveUpdateDestroyAPIView):
             request.data['user'] = request.user.id
             request.data['room'] = room.id
 
-        return super().update(request, *args, **kwargs)
+        return super(DetailHotelReservationAPIView, self).update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         instance.is_valid = False
@@ -262,7 +258,7 @@ class CreateHotelRateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         try:
-            super().perform_create(serializer)
+            super(CreateHotelRateAPIView, self).perform_create(serializer)
         except IntegrityError as e:
             raise exceptions.ValidationError("Error: {}".format(e))
 
@@ -293,7 +289,7 @@ class DetailHotelRateAPIView(generics.RetrieveUpdateDestroyAPIView):
             request.data['user'] = request.user.id
             request.data['hotel'] = self.get_queryset().first().hotel_id
 
-        return super().update(request, *args, **kwargs)
+        return super(DetailHotelRateAPIView, self).update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         instance.is_valid = False
@@ -411,7 +407,7 @@ class DetailHotelGalleryAPIView(generics.RetrieveUpdateDestroyAPIView):
         else:
             request.data['hotel'] = self.get_queryset().first().hotel_id
 
-        return super().update(request, *args, **kwargs)
+        return super(DetailHotelGalleryAPIView, self).update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         instance.is_valid = False
@@ -476,4 +472,4 @@ class DetailHotelImageAPIView(generics.RetrieveUpdateDestroyAPIView):
         else:
             request.data['gallery'] = self.get_queryset().first().gallery_id
 
-        return super().update(request, *args, **kwargs)
+        return super(DetailHotelImageAPIView, self).update(request, *args, **kwargs)

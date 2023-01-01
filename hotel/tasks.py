@@ -13,8 +13,8 @@ from reservations.base_models.room import RoomStatus
 @transaction.atomic
 def check_reservation():
     try:
-        reserved = HotelReservation.objects.filter(reserved_status=ReservedStatus.RESERVED, is_valid=True,
-                                                   check_out_date__lte=timezone.now()).all()
+        reserved = HotelReservation.objects.filter(reserved_status=ReservedStatus.RESERVED,
+                                                   is_valid=True, check_out_date__lte=timezone.now()).all()
         if reserved.exists():
             update_room = []
             update_hotel = set()

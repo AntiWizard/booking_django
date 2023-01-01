@@ -32,7 +32,7 @@ class AbstractTerminal(models.Model):
 
 
 class AbstractTerminalCompany(models.Model):
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, unique=True)
     is_valid = models.BooleanField(default=True)
     created_time = models.DateTimeField(auto_now_add=True)
     modified_time = models.DateTimeField(auto_now=True)

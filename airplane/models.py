@@ -1,12 +1,9 @@
-from django.db import models
-
 from reservations.base_models.address import AbstractAddress
 from reservations.base_models.comment import AbstractComment
 from reservations.base_models.rate import AbstractRate
 from reservations.base_models.reservation import AbstractReservation
 from reservations.base_models.seat import AbstractSeat
-from reservations.base_models.transport import AbstractTransfer, TransportStatus, AbstractTransport, AbstractTerminal, \
-    AbstractTerminalCompany
+from reservations.base_models.transport import *
 
 
 # ---------------------------------------------Airport------------------------------------------------------------------
@@ -111,7 +108,7 @@ class AirportAddress(AbstractAddress):
     pass
 
 
-# ---------------------------------------------AirplaneComment----------------------------------------------------------
+# ---------------------------------------------AirplaneCompanyComment----------------------------------------------------
 
 
 class AirplaneCompanyComment(AbstractComment):

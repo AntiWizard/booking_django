@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from hotel.models import Hotel, HotelReservation, HotelRoom, HotelAddress, HotelRating
+from hotel.models import *
 
 
 class HotelAdmin(admin.ModelAdmin):

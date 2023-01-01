@@ -3,8 +3,7 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 from rest_framework import serializers, exceptions
 
-from hotel.models import Hotel, HotelRating, HotelRoom, HotelReservation, HotelComment, HotelGallery, \
-    HotelImage, HotelAddress
+from hotel.models import *
 from reservations.base_models.comment import CommentStatus
 from reservations.base_models.reservation import ReservedStatus
 from reservations.base_models.residence import ResidenceStatus
@@ -12,7 +11,7 @@ from reservations.base_models.room import RoomStatus
 from reservations.models import Payment, PaymentStatus
 from reservations.serializers import LocationSerializer, PriceByCurrencySerializer, PaymentSerializer
 from reservations.sub_models.price import Price, Currency
-from utlis.check_obj import check_status_in_request_data, check_reserved_key_existed
+from utlis.check_obj_hotel import check_status_in_request_data, check_reserved_key_existed
 from utlis.reservation import convert_payment_status_to_reserved_status
 
 
@@ -139,8 +138,6 @@ class HotelSerializer(serializers.ModelSerializer):
 # ---------------------------------------------HotelRoom----------------------------------------------------------------
 
 class HotelRoomSerializer(serializers.ModelSerializer):
-    price = PriceByCurrencySerializer()
-
     class Meta:
         model = HotelRoom
         fields = ('id', 'number', 'capacity', 'status', 'description', 'price', 'hotel', 'avatar')
@@ -149,7 +146,6 @@ class HotelRoomSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         price = validated_data.pop('price', None)
         currency = price.pop('currency', None)
-
         try:
             currency, _ = Currency.objects.get_or_create(name=currency.get('name', None),
                                                          defaults={"code": currency.get('code', None)})
@@ -159,7 +155,7 @@ class HotelRoomSerializer(serializers.ModelSerializer):
             raise exceptions.ValidationError("invalid data -> {}".format(e))
 
         hotel_room = HotelRoom.objects.create(price=price, **validated_data)
-
+        super(HotelRoomSerializer, self).create()
         return hotel_room
 
     @transaction.atomic
