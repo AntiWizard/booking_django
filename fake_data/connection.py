@@ -1,8 +1,7 @@
 import psycopg2
 
 from fake_data.address import insert_airport_address, insert_hotel_address
-from fake_data.airplane import insert_airport, insert_airport_terminal, insert_airport_terminal_company, \
-    insert_airplane, insert_seat
+from fake_data.airplane import *
 from fake_data.currency import insert_currency
 from fake_data.hotel import insert_hotel, insert_room
 from fake_data.price import insert_price
@@ -35,11 +34,11 @@ def airplane():
     cursor.execute("select id from airplane_airportterminal")
     airport_terminal_ids = cursor.fetchall()
 
-    insert_airport_terminal_company(conn, airport_terminal_ids, False)
-    cursor.execute("select id from airplane_airportterminalcompany")
-    airport_terminal_company_ids = cursor.fetchall()
+    insert_airplane_company(conn, airport_terminal_ids, False)
+    cursor.execute("select id from airplane_airplanecompany")
+    airplane_company_ids = cursor.fetchall()
 
-    insert_airplane(conn, airport_terminal_company_ids, False)
+    insert_airplane(conn, airplane_company_ids, False)
     cursor.execute("select id,max_reservation from airplane_airplane")
     airplane_ids = cursor.fetchall()
     cursor.execute("select id from reservations_price")

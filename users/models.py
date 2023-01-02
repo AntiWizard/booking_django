@@ -64,6 +64,7 @@ class User(AbstractUser):
     birth_day = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=Gender.choices, null=True, blank=True)
     nationality = models.CharField(max_length=40, null=True, blank=True)
+    national_id = models.CharField(max_length=10, null=True, blank=True)
     avatar = models.ImageField(upload_to='auth/avatars/', null=True, blank=True)
     is_valid = models.BooleanField(default=True)
     created_time = models.DateTimeField(auto_now_add=True)

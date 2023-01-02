@@ -38,7 +38,7 @@ def insert_airport_terminal(conn, ids, flag=True):
         print("ADD airport terminal")
 
 
-def insert_airport_terminal_company(conn, ids, flag=True):
+def insert_airplane_company(conn, ids, flag=True):
     ids = [id[0] for id in ids]
     if flag and conn.status == 1:
         cursor = conn.cursor()
@@ -50,7 +50,7 @@ def insert_airport_terminal_company(conn, ids, flag=True):
 
         for d in data:
             cursor.execute(
-                "INSERT INTO airplane_airportterminalcompany(name, is_valid, created_time, modified_time, airport_terminal_id)"
+                "INSERT INTO airplane_airplanecompany(name, is_valid, created_time, modified_time, airport_terminal_id)"
                 "VALUES (%s,TRUE,now(),now(), %s)", d)
 
         print("ADD airport terminal company")

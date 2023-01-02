@@ -206,10 +206,15 @@ class HotelReservationSerializer(serializers.ModelSerializer):
             'check_out_date', 'payment',)
 
     def get_total_cost(self, obj):
-        return {"cost": (obj.adult_count + obj.children_count * 0.5) * obj.room.price.value,
+        return {"cost": obj.room.price.value,
                 "currency": obj.room.price.currency.code}
 
     def validate(self, data):
+        if data["room"].hotel.residence_status == ResidenceStatus.FULL:
+            raise exceptions.ValidationError("This hotel has full!")
+        elif data["room"].hotel.residence_status == ResidenceStatus.PROBLEM:
+            raise exceptions.ValidationError("This hotel has problem for reservation!")
+
         if not (data['check_out_date'] > data['check_in_date'] >= timezone.now().date()):
             raise exceptions.ValidationError({"check_out_date with check_in_date": "invalid date"})
 
@@ -275,7 +280,7 @@ def update_reservation(request, **kwargs):
             if room.status == RoomStatus.FREE:
                 room.status = RoomStatus.RESERVED
                 room.save()
-                check_and_update_if_hotel_full(room.hotel.id)
+                check_and_update_if_hotel_full(room.hotel_id)
             else:
                 raise exceptions.ValidationError("Room for this reserved: {} was invalid".format(reserved_key))
 
@@ -293,6 +298,8 @@ def check_and_update_if_hotel_full(hotel_id):
         return Hotel.objects.filter(id=hotel_id).update(residence_status=ResidenceStatus.FULL)
     return
 
+
+# ---------------------------------------------UpdateHotelComment-------------------------------------------------------
 
 @transaction.atomic
 def update_hotel_comment(request, **kwargs):

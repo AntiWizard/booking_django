@@ -3,26 +3,14 @@ from django.urls import path
 from airplane.views import *
 
 urlpatterns = [
-    path('airport/', ListCreateAirportAPIView.as_view(), name='airport'),
-    path('airport/<str:title>/', DetailAirportAPIView.as_view(), name='airport-detail'),
+    path('airplane/', ListAirplaneAPIView.as_view(), name='airplane'),
+    path('airplane/<int:pk>/', DetailAirplaneAPIView.as_view(), name='airplane-detail'),
 
-    path('airport/<str:title>/terminal/', ListCreateAirportTerminalAPIView.as_view(), name='airport-terminal'),
-    path('airport/<str:title>/terminal/<int:number>/', DetailAirportTerminalAPIView.as_view(),
-         name='airport-terminal-detail'),
-
-    path('airport/<str:title>/terminal/<int:number>/comapny/', ListCreateAirportTerminalCompanyAPIView.as_view(),
-         name='airport-terminal-company'),
-    path('airport/<str:title>/terminal/<int:number>/company/<str:name>/', DetailAirportTerminalCompanyAPIView.as_view(),
-         name='airport-terminal-company-detail'),
-
-    path('airplane/', ListCreateAirplaneAPIView.as_view(), name='airplane'),
-    path('airplane/<int:transport_number>/', DetailAirplaneAPIView.as_view(), name='airplane-detail'),
-
-    path('airplane/<str:transport_number>/seat/', ListCreateAirplaneSeatAPIView.as_view(), name='airplane-seat'),
-    path('airplane/<str:transport_number>/seat/<int:number>/', DetailAirplaneSeatAPIView.as_view(),
+    path('airplane/<int:pk>/seat/', ListAirplaneSeatAPIView.as_view(), name='airplane-seat'),
+    path('airplane/<int:pk>/seat/<int:number>/', DetailAirplaneSeatAPIView.as_view(),
          name='airplane-seat-detail'),
 
-    path('airplane/<str:name>/seat/<int:number>/inital/', ListCreateAirplaneReservationAPIView.as_view(),
+    path('airplane/<int:pk>/inital/', CreateAirplaneReservationAPIView.as_view(),
          name='airplane-reserved'),
     path('airplane/reserved/<str:reserved_key>/', DetailAirplaneReservationAPIView.as_view(),
          name='airplane-reserved-detail'),

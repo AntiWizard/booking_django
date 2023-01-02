@@ -1,23 +1,5 @@
 from rest_framework import exceptions
 
-from airplane.models import AirportTerminalCompany, AirplaneSeat
-
-
-def get_company(name, is_valid=True):
-    try:
-        return AirportTerminalCompany.objects.filter(name__iexact=name, is_valid=is_valid).get()
-    except AirportTerminalCompany.DoesNotExist:
-        raise exceptions.ValidationError("Airplane company Dose not exist with this name in url!")
-
-
-def get_seat(number, airplane, is_valid=True):
-    try:
-        return AirplaneSeat.objects.filter(number=number, airplane=airplane, is_valid=is_valid).get()
-    except AirplaneSeat.DoesNotExist:
-        raise exceptions.ValidationError(
-            "Seat Dose not exist for this Airport: {} with Airplane number: {}!".format(
-                airplane.company.airport_terminal.airport.titel, airplane.transport_number))
-
 
 def check_status_in_request_data(status, data, cls_status):
     if status in data:

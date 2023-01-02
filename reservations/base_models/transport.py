@@ -6,6 +6,7 @@ from utlis.validation_transport_date import validation_transport_date
 
 class TransportStatus(models.TextChoices):
     SPACE = "SPACE"
+    FULL = "FULL"
     TRANSFER = "TRANSFER"
     ARRIVED = "ARRIVED"
     CANCELLED = 'CANCELLED'
@@ -31,7 +32,7 @@ class AbstractTerminal(models.Model):
         abstract = True
 
 
-class AbstractTerminalCompany(models.Model):
+class AbstractTransportCompany(models.Model):
     name = models.CharField(max_length=64, unique=True)
     is_valid = models.BooleanField(default=True)
     created_time = models.DateTimeField(auto_now_add=True)

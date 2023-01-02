@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class ReservedStatus(models.TextChoices):
+class SeatStatus(models.TextChoices):
     FREE = "FREE"
     RESERVED = "RESERVED"
     PROBLEM = "PROBLEM"
@@ -9,7 +9,7 @@ class ReservedStatus(models.TextChoices):
 
 class AbstractSeat(models.Model):
     number = models.PositiveSmallIntegerField()
-    status = models.CharField(max_length=10, choices=ReservedStatus.choices, default=ReservedStatus.FREE)
+    status = models.CharField(max_length=10, choices=SeatStatus.choices, default=SeatStatus.FREE)
     price = models.ForeignKey("reservations.Price", on_delete=models.DO_NOTHING, related_name='%(class)ss_price')
     is_valid = models.BooleanField(default=True)
     created_time = models.DateTimeField(auto_now_add=True)

@@ -1,208 +1,147 @@
-from django.db import IntegrityError
-from django.http import QueryDict
-from rest_framework import generics
+from rest_framework import generics, response, status
 from rest_framework.permissions import IsAdminUser, AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from airplane.serializers import *
-# ------------------------------------------------Airport---------------------------------------------------------------
 from users.permissions import IsOwner
 
 
-class ListCreateAirportAPIView(generics.ListCreateAPIView):
-    pass
+class AirplaneMixin:
+    authentication_classes = [JWTAuthentication]
+    throttle_classes = [UserRateThrottle]
 
+    def get_airplane(self, pk, is_valid=True):
+        try:
+            return Airplane.objects.filter(pk=pk, is_valid=is_valid).get()
+        except Airplane.DoesNotExist:
+            raise exceptions.ValidationError("Airplane Dose not exist fot this id: {}!".format(pk))
 
-class DetailAirportAPIView(generics.RetrieveUpdateDestroyAPIView):
-    pass
+    def get_company(self, name, is_valid=True):
+        try:
+            return AirplaneCompany.objects.filter(name__iexact=name, is_valid=is_valid).get()
+        except AirplaneCompany.DoesNotExist:
+            raise exceptions.ValidationError("Airplane company Dose not exist with this name in url!")
 
-
-# ---------------------------------------------AirportTerminal----------------------------------------------------------
-
-class ListCreateAirportTerminalAPIView(generics.ListCreateAPIView):
-    pass
-
-
-class DetailAirportTerminalAPIView(generics.RetrieveUpdateDestroyAPIView):
-    pass
-
-
-# ---------------------------------------------AirportTerminalCompany---------------------------------------------------
-
-
-class ListCreateAirportTerminalCompanyAPIView(generics.ListCreateAPIView):
-    pass
-
-
-class DetailAirportTerminalCompanyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    pass
+    def get_seat(self, number, airplane, is_valid=True):
+        try:
+            return AirplaneSeat.objects.filter(number=number, airplane=airplane, is_valid=is_valid).get()
+        except AirplaneSeat.DoesNotExist:
+            raise exceptions.ValidationError(
+                "Seat Dose not exist for this Airport: {} with Airplane number: {}!".format(
+                    airplane.company.airport_terminal.airport.titel, airplane.transport_number))
 
 
 # ---------------------------------------------Airplane-----------------------------------------------------------------
 
 
-class ListCreateAirplaneAPIView(generics.ListCreateAPIView):
+class ListAirplaneAPIView(generics.ListAPIView, AirplaneMixin):
     queryset = Airplane.objects.filter(is_valid=True).all()
     serializer_class = AirplaneSerializer
-    authentication_classes = [JWTAuthentication]
-    throttle_classes = [UserRateThrottle]
-
-    def get_permissions(self):
-        if self.request.method in SAFE_METHODS:
-            return [AllowAny()]
-        else:
-            return [IsAdminUser()]
+    permission_classes = [AllowAny]
 
 
-class DetailAirplaneAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Airplane.objects.all()
+class DetailAirplaneAPIView(generics.RetrieveAPIView, AirplaneMixin):
+    queryset = Airplane.objects.filter(is_valid=True).all()
     serializer_class = AirplaneSerializer
-    authentication_classes = [JWTAuthentication]
-    throttle_classes = [UserRateThrottle]
-    lookup_field = 'transport_number'
-
-    def get_queryset(self):
-        if self.request.method == SAFE_METHODS:
-            return Airplane.objects.filter(is_valid=True).all()
-        else:
-            return Airplane.objects.all()
-
-    def get_permissions(self):
-        if self.request.method in SAFE_METHODS:
-            return [AllowAny()]
-        else:
-            return [IsAdminUser()]
-
-    def perform_destroy(self, instance):
-        instance.is_valid = False
-        instance.save()
+    permission_classes = [AllowAny]
 
 
 # ---------------------------------------------AirplaneSeat-------------------------------------------------------------
 
-class ListCreateAirplaneSeatAPIView(generics.ListCreateAPIView):
-    queryset = AirplaneSeat.objects.filter(is_valid=True).all().select_related('airplane')
+class ListAirplaneSeatAPIView(generics.ListAPIView, AirplaneMixin):
     serializer_class = AirplaneSeatSerializer
-    authentication_classes = [JWTAuthentication]
-    throttle_classes = [UserRateThrottle]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        transport_number = self.kwargs.get('transport_number', None)
-        return AirplaneSeat.objects.filter(airplane__transport_number=transport_number,
-                                           is_valid=True).all().select_related('airplane')
+        pk = self.kwargs.get('pk', None)
+        airplane = self.get_airplane(pk)
+        return AirplaneSeat.objects.filter(airplane=airplane, is_valid=True).all().select_related('airplane')
 
-    def get_permissions(self):
-        if self.request.method in SAFE_METHODS:
-            return [AllowAny()]
-        else:
-            return [IsAdminUser()]
+
+class DetailAirplaneSeatAPIView(generics.RetrieveAPIView, AirplaneMixin):
+    serializer_class = AirplaneSeatSerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'number'
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk', None)
+        airplane = self.get_airplane(pk)
+        return AirplaneSeat.objects.filter(airplane=airplane, is_valid=True).all().select_related('airplane')
+
+
+# ---------------------------------------------AirplaneReservation------------------------------------------------------
+class CreateAirplaneReservationAPIView(generics.CreateAPIView, AirplaneMixin):
+    serializer_class = AirplaneReservationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk', None).replace('-', ' ')
+        airplane = self.get_airplane(pk)
+
+        return AirplaneReservation.objects.filter(seat__airplane=airplane,
+                                                  seat__status=SeatStatus.FREE, is_valid=True).all()
 
     def create(self, request, *args, **kwargs):
-        try:
-            transport_number = self.kwargs.get('transport_number', None)
-            airplane = Airplane.objects.filter(airplane__transport_number=transport_number).get()
-        except Airplane.DoesNotExist:
-            raise exceptions.ValidationError("Airplane Dose not exist with this number in url!")
-
-        request.data['airplane'] = airplane.id
-
-        return super().create(request, *args, **kwargs)
+        request.data['user'] = request.user.id
+        return super(CreateAirplaneReservationAPIView, self).create(request, *args, **kwargs)
 
 
-class DetailAirplaneSeatAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = AirplaneSeat.objects.filter(is_valid=True).all().select_related('airplane')
-    serializer_class = AirplaneSeatSerializer
-    authentication_classes = [JWTAuthentication]
-    throttle_classes = [UserRateThrottle]
-    lookup_field = 'transport_number'
+class DetailAirplaneReservationAPIView(generics.RetrieveUpdateDestroyAPIView, AirplaneMixin):
+    queryset = AirplaneReservation.objects.filter(is_valid=True).all()
+    serializer_class = AirplaneReservationSerializer
+    permission_classes = [IsOwner]
+    lookup_field = 'reserved_key'
 
     def get_queryset(self):
-        if self.request.method in SAFE_METHODS:
-            transport_number = self.kwargs.get('transport_number', None)
-            return AirplaneSeat.objects.filter(airplane__transport_number=transport_number,
-                                               is_valid=True).all().select_related(
-                'airplane')
-        else:
-            transport_number = self.kwargs.get('transport_number', None)
-            return AirplaneSeat.objects.filter(airplane__transport_number=transport_number).all().select_related(
-                'airplane')
+        pk = self.kwargs.get('pk', None).replace('-', ' ')
+        airplane = self.get_airplane(pk)
 
-    def get_permissions(self):
-        if self.request.method == SAFE_METHODS:
-            return [AllowAny()]
+        seat_number = self.kwargs.get('number', None)
+        seat = self.get_seat(seat_number, airplane)
+        if self.request.method in SAFE_METHODS:
+            return AirplaneReservation.objects.filter(seat=seat, is_valid=True).get()
         else:
-            return [IsAdminUser()]
+            return AirplaneReservation.objects.filter(seat=seat).get()
 
     def update(self, request, *args, **kwargs):
-        try:
-            transport_number = self.kwargs.get('transport_number', None)
-            airplane = Airplane.objects.filter(airplane__transport_number=transport_number).get()
-        except Airplane.DoesNotExist:
-            raise exceptions.ValidationError("Airplane Dose not exist with this number in url!")
 
-        request.data['airplane'] = airplane.id
-
-        return super().update(request, *args, **kwargs)
+        request.data['user'] = request.user.id
+        request.data['seat'] = self.get_queryset().seat_id
+        return super(DetailAirplaneReservationAPIView, self).update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         instance.is_valid = False
         instance.save()
-
-
-# ---------------------------------------------AirplaneReservation------------------------------------------------------
-class ListCreateAirplaneReservationAPIView(generics.ListCreateAPIView):
-    pass
-
-
-class DetailAirplaneReservationAPIView(generics.RetrieveUpdateDestroyAPIView):
-    pass
 
 
 # ---------------------------------------------PaymentReservation-------------------------------------------------------
 
 
-class PaymentReservationAPIView(generics.CreateAPIView, generics.DestroyAPIView):
-    authentication_classes = [JWTAuthentication]
-    throttle_classes = [UserRateThrottle]
+class PaymentReservationAPIView(generics.CreateAPIView, AirplaneMixin):
     permission_classes = [IsOwner]
     lookup_field = 'reserved_key'
 
-    # def post(self, request, *args, **kwargs):
-    #     data = update_reservation(request, **kwargs)
-    #     return response.Response(data=data, status=status.HTTP_200_OK)
-    #
-    # def delete(self, request, *args, **kwargs):
-    #     instance = HotelReservation.objects.filter(reserved_key=self.kwargs['reserved_key']).get()
-    #     instance.reserved_status = ReservedStatus.CANCELLED
-    #     instance.save()
-    #     Payment.objects.filter(reserved_key=instance.reserved_key).update(payment_status=PaymentStatus.CANCELLED)
+    def post(self, request, *args, **kwargs):
+        data = update_reservation(request, **kwargs)
+        return response.Response(data=data, status=status.HTTP_200_OK)
 
 
 # ---------------------------------------------AirplaneCompanyRate------------------------------------------------------
 
-class CreateAirplaneCompanyRateAPIView(generics.CreateAPIView):
-    serializer_class = AirportCompanyRatingSerializer
-    authentication_classes = [JWTAuthentication]
-    throttle_classes = [UserRateThrottle]
+class CreateAirplaneCompanyRateAPIView(generics.CreateAPIView, AirplaneMixin):
+    serializer_class = AirplaneCompanyRatingSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
-        company = get_company(name)
+        company = self.get_company(name)
 
-        return HotelRating.objects.filter(hotel=hotel).all()
+        return AirplaneCompanyRating.objects.filter(company=company, is_valid=True).all()
 
     def create(self, request, *args, **kwargs):
-
-        if isinstance(request.data, QueryDict):
-            request.data._mutable = True
-            request.data['user'] = request.user.id
-            request.data['hotel'] = self.get_queryset().first().hotel_id
-            request.data._mutable = False
-        else:
-            request.data['user'] = request.user.id
-            request.data['hotel'] = self.get_queryset().first().hotel_id
+        request.data['user'] = request.user.id
+        request.data['company'] = self.get_queryset().first().company_id
 
         return super(CreateAirplaneCompanyRateAPIView, self).create(request, *args, **kwargs)
 
@@ -213,31 +152,20 @@ class CreateAirplaneCompanyRateAPIView(generics.CreateAPIView):
             raise exceptions.ValidationError("Error: {}".format(e))
 
 
-class DetailAirplaneCompanyRateAPIView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = AirportCompanyRatingSerializer
-    authentication_classes = [JWTAuthentication]
-    throttle_classes = [UserRateThrottle]
+class DetailAirplaneCompanyRateAPIView(generics.RetrieveUpdateDestroyAPIView, AirplaneMixin):
+    serializer_class = AirplaneCompanyRatingSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         name = self.kwargs.get('name', None).replace('-', ' ')
-        hotel = get_hotel(name)
+        company = self.get_company(name)
 
         if self.request.method in SAFE_METHODS:
-            return AirportCompanyRating.objects.filter(hotel=hotel, is_valid=True).all()
-        else:
-            return AirportCompanyRating.objects.filter(hotel=hotel).all()
+            return AirplaneCompanyRating.objects.filter(company=company, is_valid=True).all()
 
     def update(self, request, *args, **kwargs):
-
-        if isinstance(request.data, QueryDict):
-            request.data._mutable = True
-            request.data['user'] = request.user.id
-            request.data['hotel'] = self.get_queryset().first().hotel_id
-            request.data._mutable = False
-        else:
-            request.data['user'] = request.user.id
-            request.data['hotel'] = self.get_queryset().first().hotel_id
+        request.data['user'] = request.user.id
+        request.data['company'] = self.get_queryset().first().company_id
 
         return super(DetailAirplaneCompanyRateAPIView, self).update(request, *args, **kwargs)
 
@@ -249,13 +177,51 @@ class DetailAirplaneCompanyRateAPIView(generics.RetrieveUpdateDestroyAPIView):
 # ---------------------------------------------AirplaneCompanyComment---------------------------------------------------
 
 
-class ListCreateAirplaneCompanyCommentAPIView(generics.ListCreateAPIView):
-    pass
+class ListCreateAirplaneCompanyCommentAPIView(generics.ListCreateAPIView, AirplaneMixin):
+    serializer_class = AirplaneCompanyCommentForCreatedSerializer
+
+    def get_queryset(self):
+        name = self.kwargs.get('name', None).replace('-', ' ')
+        company = self.get_company(name)
+        return AirplaneCompanyComment.objects.filter(company=company, status=CommentStatus.APPROVED).all()
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [AllowAny()]
+        else:
+            return [IsAuthenticated()]
+
+    def create(self, request, *args, **kwargs):
+
+        request.data['user'] = request.user.id
+        request.data['company'] = self.get_queryset().first().company_id
+
+        return super(ListCreateAirplaneCompanyCommentAPIView, self).create(request, *args, **kwargs)
 
 
-class DetailAirplaneCompanyCommentAPIView(generics.CreateAPIView):
-    pass
+class DetailAirplaneCompanyCommentAPIView(generics.RetrieveUpdateDestroyAPIView, AirplaneMixin):
+    serializer_class = AirplaneCompanyCommentForUpdatedSerializer
+    permission_classes = [IsOwner]
+
+    def get_queryset(self):
+        name = self.kwargs.get('name', None).replace('-', ' ')
+        company = self.get_company(name)
+
+        if self.request.method in SAFE_METHODS:
+            return AirplaneCompanyComment.objects.filter(
+                company=company, status=CommentStatus.APPROVED).all()
+        else:
+            return AirplaneCompanyComment.objects.filter(
+                company=company, status__in=[CommentStatus.CREATED, CommentStatus.APPROVED]).all()
+
+    def perform_destroy(self, instance):
+        instance.status = CommentStatus.DELETED
+        instance.save()
 
 
-class CheckAirplaneCommentAPIView(generics.CreateAPIView):
-    pass
+class CheckAirplaneCommentAPIView(generics.UpdateAPIView, AirplaneMixin):
+    permission_classes = [IsAdminUser]
+
+    def update(self, request, *args, **kwargs):
+        data = update_airplane_company_comment(request, **kwargs)
+        return response.Response(data=data, status=status.HTTP_200_OK)

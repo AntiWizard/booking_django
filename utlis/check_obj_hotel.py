@@ -1,29 +1,5 @@
 from rest_framework import exceptions
 
-from hotel.models import Hotel, HotelRoom, HotelGallery
-
-
-def get_hotel(name, is_valid=True):
-    try:
-        return Hotel.objects.filter(name__iexact=name, is_valid=is_valid).get()
-    except Hotel.DoesNotExist:
-        raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
-
-
-def get_room(number, hotel, is_valid=True):
-    try:
-        return HotelRoom.objects.filter(number=number, hotel=hotel, is_valid=is_valid).get()
-    except HotelRoom.DoesNotExist:
-        raise exceptions.ValidationError("room Dose not exist for this hotel: {}!".format(hotel.name))
-
-
-def get_gallery(name, hotel, is_valid=True):
-    try:
-        return HotelGallery.objects.filter(name__iexact=name, hotel=hotel, is_valid=is_valid).get()
-    except HotelGallery.DoesNotExist:
-        raise exceptions.ValidationError(
-            "Hotel gallery Dose not exist with this name for this hotel: {}!".format(hotel.name))
-
 
 def check_status_in_request_data(status, data, cls_status):
     if status in data:

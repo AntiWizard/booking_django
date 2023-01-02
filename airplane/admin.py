@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from airplane.models import Airplane, AirplaneReservation, AirplaneSeat, AirportCompanyRating
+from airplane.models import Airplane, AirplaneReservation, AirplaneSeat, AirplaneCompanyRating
 
 
 class AirplaneAdmin(admin.ModelAdmin):
@@ -15,11 +15,11 @@ class AirplaneReservationAdmin(admin.ModelAdmin):
     pass
 
 
-class AirportCompanyRatingAdmin(admin.ModelAdmin):
+class AirplaneCompanyRatingAdmin(admin.ModelAdmin):
     pass
 
 
 admin.site.register(Airplane, AirplaneAdmin)
 admin.site.register(AirplaneSeat, AirplaneSeatAdmin)
 admin.site.register(AirplaneReservation, AirplaneReservationAdmin)
-admin.site.register(AirportCompanyRating, AirportCompanyRatingAdmin)
+admin.site.register(AirplaneCompanyRating, AirplaneCompanyRatingAdmin)
