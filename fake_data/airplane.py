@@ -62,17 +62,17 @@ def insert_airplane(conn, ids, flag=True):
         cursor = conn.cursor()
         data, i = [], 0
         for id in ids:
-            data.append([100 + i, "", 100, 0, 'SPACE', 'pilot-' + str(id), id, 2])
+            data.append([100 + i, "", 100, 0, 'SPACE', 'pilot-' + str(id), id, 2, 1])
             i += 1
 
         data = [tuple(item) for item in data]
 
         for d in data:
             cursor.execute(
-                "INSERT INTO airplane_airplane(transport_number, description, max_reservation, number_reserved,"
-                " transfer_date, duration, transport_status, is_valid, created_time, modified_time, pilot,"
-                " company_id, destination_id)"
-                "VALUES (%s,%s,%s,%s,TIMESTAMP '2023-01-01 12:00:00',TIME '01:30:00',%s,TRUE,now(),now(), %s,%s,%s)",
+                "INSERT INTO airplane_airplane(transport_number, description, max_reservation,"
+                " number_reserved, transfer_date, duration, transport_status, is_valid,"
+                " created_time, modified_time, pilot, company_id, destination_id, source_id)"
+                "VALUES (%s,%s,%s,%s,TIMESTAMP '2023-01-01 12:00:00',TIME '01:30:00',%s,TRUE,now(),now(), %s,%s,%s,%s)",
                 d)
 
         print("ADD airplane")

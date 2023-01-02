@@ -38,13 +38,13 @@ def airplane():
     cursor.execute("select id from airplane_airplanecompany")
     airplane_company_ids = cursor.fetchall()
 
-    insert_airplane(conn, airplane_company_ids, False)
+    insert_airplane(conn, airplane_company_ids, True)
     cursor.execute("select id,max_reservation from airplane_airplane")
     airplane_ids = cursor.fetchall()
     cursor.execute("select id from reservations_price")
     price_ids = cursor.fetchall()
 
-    insert_seat(conn, airplane_ids, price_ids, False)
+    insert_seat(conn, airplane_ids, price_ids, True)
 
 
 conn = psycopg2.connect(

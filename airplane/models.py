@@ -6,8 +6,9 @@ from reservations.base_models.reservation import AbstractReservation
 from reservations.base_models.seat import AbstractSeat
 from reservations.base_models.transport import *
 
-
 # ---------------------------------------------Airport------------------------------------------------------------------
+from reservations.sub_models.price import Price
+
 
 class Airport(AbstractTransport):
     address = models.ForeignKey("AirportAddress", on_delete=models.PROTECT, related_name='airport')
@@ -37,8 +38,20 @@ class AirplaneCompany(AbstractTransportCompany):
 class Airplane(AbstractTransfer):
     company = models.ForeignKey(AirplaneCompany, on_delete=models.CASCADE, related_name="airplane")
     pilot = models.CharField(max_length=50)
-    destination = models.ForeignKey("AirportAddress", on_delete=models.PROTECT,
+    source = models.ForeignKey(Airport, on_delete=models.PROTECT,
+                               related_name='source')
+    destination = models.ForeignKey(Airport, on_delete=models.PROTECT,
                                     related_name='destination')
+
+    @property
+    def average_rating(self):
+        rate = AirplaneCompanyRating.objects.filter(company__airplane=self).all().aggregate(avg=models.Avg('rate'))
+        return rate.get('avg') or 5
+
+    @property
+    def price_per_seat(self):
+        price = AirplaneSeat.objects.filter(airplane=self).first()
+        return price.price or -1
 
     def __str__(self):
         return "{} : {}".format(self.transport_number, self.pilot)

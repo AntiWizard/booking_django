@@ -95,13 +95,17 @@ class AirplaneCompanyCommentForUpdatedSerializer(serializers.ModelSerializer):
 
 
 class AirplaneSerializer(serializers.ModelSerializer):
-    source = AirportSerializer(source='address')
+    company = serializers.SlugRelatedField(slug_field='name', many=False, read_only=True)
+    source = AirportSerializer(many=False, read_only=True, required=False)
+    destination = AirportSerializer(many=False, read_only=True, required=False)
+    price_per_seat = PriceByCurrencySerializer(many=False, read_only=True, required=False)
 
     class Meta:
         model = Airplane
         fields = (
-            'id', 'pilot', 'company', 'transport_number', 'description', 'transport_status', 'max_reservation',
-            'number_reserved', 'source', 'duration', 'destination', 'transfer_date',)
+            'id', 'pilot', 'company', 'average_rating', 'price_per_seat', 'transport_number', 'description',
+            'transport_status', 'max_reservation', 'number_reserved', 'source', 'duration', 'destination',
+            'transfer_date',)
         extra_kwargs = {"transport_number": {"required": False, "read_only": True}}
 
 
@@ -115,29 +119,43 @@ class AirplaneSeatSerializer(serializers.ModelSerializer):
         fields = ('id', 'number', 'status', 'price', 'airplane')
 
 
+# ---------------------------------------------AirplanePassenger--------------------------------------------------------
+
+class AirplanePassengerSerializer(serializers.ModelSerializer):
+    seat = AirplaneSeatSerializer(required=False)
+
+    class Meta:
+        model = AirplanePassenger
+        fields = (
+            'id', 'passenger_code', 'parent', 'seat', 'phone', 'national_id', 'birth_day', 'first_name', 'last_name',
+            'transfer_status',)
+
+        extra_kwargs = {"parent": {'required': False}}
+
+
 # ---------------------------------------------AirplaneReservation------------------------------------------------------
 
 class AirplaneReservationSerializer(serializers.ModelSerializer):
     total_cost = serializers.SerializerMethodField()
     payment = PaymentSerializer(many=False, required=False)
+    passenger = AirplanePassengerSerializer(many=True, required=False)
 
     class Meta:
         model = AirplaneReservation
-        fields = ('id', 'user', 'reserved_status', 'adult_count', 'children_count', 'total_cost',
-                  'payment',)
+        fields = ('id', 'airplane', 'user', 'reserved_status', 'passenger_count', 'total_cost',
+                  'payment', 'passenger',)
 
     def get_total_cost(self, obj):
-        return {"cost": (obj.adult_count + obj.children_count) * obj.room.price.value,
-                "currency": obj.room.price.currency.code}
+        return {"cost": obj.passenger_count * obj.airplane.price_per_seat.value,
+                "currency": obj.airplane.price_per_seat.currency.code}
 
     def validate(self, data):
 
-        if (data["seat"].airplane.max_reservation - data["seat"].airplane.number_reserved) < \
-                data["adult_count"] + data["children_count"]:
+        if (data["airplane"].max_reservation - data["airplane"].number_reserved) < data["passenger_count"]:
             raise exceptions.ValidationError({
                 "adult_count with children_count": "Seat has {} capacity for this airplane number: {}!".format(
-                    (data["seat"].airplane.max_reservation - data["seat"].airplane.number_reserved),
-                    data["seat"].airplane.transport_number)})
+                    (data["airplane"].max_reservation - data["airplane"].number_reserved),
+                    data["airplane"].transport_number)})
         return data
 
     def to_representation(self, instance):
@@ -145,18 +163,43 @@ class AirplaneReservationSerializer(serializers.ModelSerializer):
 
         payment = Payment.objects.filter(reserved_key=instance.reserved_key).get()
         ret['payment'] = PaymentSerializer(payment).data
-        ret['seat'] = instance.seat.number
+
+        passengers = AirplanePassenger.objects.filter(reserved_key=instance.reserved_key).all()
+        ret['passengers'] = AirplanePassengerSerializer(passengers, many=True).data
         return ret
 
     @transaction.atomic
     def create(self, validated_data):
+        passengers = validated_data.pop('passenger', None)
+        if len(passengers) != validated_data['passenger_count']:
+            raise exceptions.ValidationError("passenger information uncompleted!")
+
+        seats = AirplaneSeat.objects.filter(airplane_id=validated_data["airplane"], status=SeatStatus.FREE) \
+            .order_by('number').all()
+        if validated_data['passenger_count'] > seats.count():
+            raise exceptions.ValidationError("not enough seats!")
+
         try:
             reserve = AirplaneReservation.objects.create(**validated_data)
             Payment.objects.create(user=reserve.user, reserved_key=reserve.reserved_key)
+            update_seats = []
+            create_passengers = []
+            for passenger, seat in zip(passengers, seats):
+                seat.status = SeatStatus.RESERVED
+                update_seats.append(seat)
+                create_passengers.append(
+                    AirplanePassenger(seat=seat, reserved_key=reserve.reserved_key, parent=validated_data['user'],
+                                      **passenger))
+
+            AirplanePassenger.objects.bulk_create(create_passengers)
+            seats = AirplaneSeat.objects.bulk_update(update_seats, fields=["status"])
+
         except (ValueError, TypeError) as e:
             raise exceptions.ValidationError("invalid data -> {}".format(e))
-        except IntegrityError:
-            raise exceptions.ValidationError("Each user has only one record reserved room!")
+        except IntegrityError as e:
+            raise exceptions.ValidationError("Each user has only one record reserved seat!")
+        except Exception as e:
+            raise e
         return reserve
 
 

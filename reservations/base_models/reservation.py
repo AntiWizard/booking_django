@@ -15,8 +15,7 @@ class ReservedStatus(models.TextChoices):
 class AbstractReservation(models.Model):
     reserved_key = models.UUIDField(editable=False, default=uuid.uuid4)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
-    adult_count = models.PositiveSmallIntegerField()
-    children_count = models.PositiveSmallIntegerField(default=0)
+    passenger_count = models.PositiveSmallIntegerField()
     reserved_status = models.CharField(max_length=15, choices=ReservedStatus.choices, default=ReservedStatus.INITIAL)
     is_valid = models.BooleanField(default=True)
     created_time = models.DateTimeField(auto_now_add=True)

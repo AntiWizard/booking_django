@@ -7,8 +7,6 @@ urlpatterns = [
     path('airplane/<int:pk>/', DetailAirplaneAPIView.as_view(), name='airplane-detail'),
 
     path('airplane/<int:pk>/seat/', ListAirplaneSeatAPIView.as_view(), name='airplane-seat'),
-    path('airplane/<int:pk>/seat/<int:number>/', DetailAirplaneSeatAPIView.as_view(),
-         name='airplane-seat-detail'),
 
     path('airplane/<int:pk>/inital/', CreateAirplaneReservationAPIView.as_view(),
          name='airplane-reserved'),
@@ -27,14 +25,4 @@ urlpatterns = [
          name='airplane-comment-detail'),
 
     path('airplane/comment/<int:pk>/checking/', CheckAirplaneCommentAPIView.as_view(), name='airplane-comment'),
-
-    # path('airplane/<str:name>/gallery/', ListCreateairplaneGalleryAPIView.as_view(), name='airplane-gallery'),
-    # path('airplane/<str:name>/gallery/<int:pk>/', DetailairplaneGalleryAPIView.as_view(),
-    #      name='airplane-gallery-detail'),
-
-    # path('airplane/<str:airplane_name>/gallery/<str:gallery_name>/image/', ListCreateairplaneImageAPIView.as_view(),
-    #      name='airplane-image'),
-    # path('airplane/<str:airplane_name>/gallery/<str:gallery_name>/image/<int:pk>/',
-    #      DetailairplaneImageAPIView.as_view(),
-    #      name='airplane-image-detail'),
 ]
