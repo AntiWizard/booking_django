@@ -106,6 +106,7 @@ class AirplanePassenger(AbstractPassenger):
 
 class AirplaneReservation(AbstractReservation):
     airplane = models.ForeignKey(Airplane, on_delete=models.PROTECT, related_name="airplane_reservation")
+    passenger_count = models.PositiveSmallIntegerField()
 
     def __str__(self):
         return "{} - {} - {}".format(self.user.phone, self.airplane.company.airport_terminal.airport.title,

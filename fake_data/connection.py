@@ -8,33 +8,33 @@ from fake_data.price import insert_price
 
 
 def hotel():
-    insert_hotel_address(conn, False)
+    insert_hotel_address(conn, True)
     cursor.execute("select id from hotel_hoteladdress")
     ids = cursor.fetchall()
 
-    insert_hotel(conn, ids, False)
+    insert_hotel(conn, ids, True)
     cursor.execute("select id,room_count from hotel_hotel")
     info = cursor.fetchall()
     cursor.execute("select id from reservations_price")
     price_ids = cursor.fetchall()
 
-    insert_room(conn, info, price_ids, False)
+    insert_room(conn, info, price_ids, True)
 
 
 def airplane():
-    insert_airport_address(conn, False)
+    insert_airport_address(conn, True)
     cursor.execute("select id from airplane_airportaddress")
     ids = cursor.fetchall()
 
-    insert_airport(conn, ids, False)
+    insert_airport(conn, ids, True)
     cursor.execute("select id from airplane_airport")
     airport_ids = cursor.fetchall()
 
-    insert_airport_terminal(conn, airport_ids, False)
+    insert_airport_terminal(conn, airport_ids, True)
     cursor.execute("select id from airplane_airportterminal")
     airport_terminal_ids = cursor.fetchall()
 
-    insert_airplane_company(conn, airport_terminal_ids, False)
+    insert_airplane_company(conn, airport_terminal_ids, True)
     cursor.execute("select id from airplane_airplanecompany")
     airplane_company_ids = cursor.fetchall()
 
@@ -53,11 +53,11 @@ conn = psycopg2.connect(
 conn.autocommit = True
 cursor = conn.cursor()
 
-insert_currency(conn, False)
+insert_currency(conn, True)
 
 cursor.execute("select id from reservations_currency")
 ids = cursor.fetchall()
-insert_price(conn, ids, False)
+insert_price(conn, ids, True)
 
 hotel()
 airplane()

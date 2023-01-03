@@ -3,6 +3,7 @@ from django.db import models
 
 class SeatStatus(models.TextChoices):
     FREE = "FREE"
+    INITIAL = "INITIAL"
     RESERVED = "RESERVED"
     PROBLEM = "PROBLEM"
 

@@ -13,7 +13,7 @@ urlpatterns = [
          name='hotel-reserved'),
     path('hotel/reserved/<str:reserved_key>/', DetailHotelReservationAPIView.as_view(),
          name='hotel-reserved-detail'),
-    path('payment/<str:reserved_key>/reserving/', PaymentReservationAPIView.as_view(),
+    path('hotel/payment/<str:reserved_key>/reserving/', PaymentReservationAPIView.as_view(),
          name='hotel-payment-result'),
 
     path('hotel/<str:name>/rate/', CreateHotelRateAPIView.as_view(), name='hotel-rate'),

@@ -12,8 +12,10 @@ def check_status_in_request_data(status, data, cls_status):
         raise exceptions.ValidationError("{} required".format(status))
 
 
-def check_reserved_key_existed(reserved_key, cls_model):
+def check_reserved_key_existed(reserved_key, cls_model, many=False):
     try:
+        if many:
+            return cls_model.objects.filter(reserved_key=reserved_key).all()
         return cls_model.objects.filter(reserved_key=reserved_key).get()
     except cls_model.DoesNotExist:
         raise exceptions.ValidationError(

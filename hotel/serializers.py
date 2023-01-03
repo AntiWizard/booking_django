@@ -11,7 +11,7 @@ from reservations.base_models.room import RoomStatus
 from reservations.models import Payment, PaymentStatus
 from reservations.serializers import LocationSerializer, PriceByCurrencySerializer, PaymentSerializer
 from reservations.sub_models.price import Price, Currency
-from utlis.check_obj_hotel import check_status_in_request_data, check_reserved_key_existed
+from utlis.check_obj import check_status_in_request_data, check_reserved_key_existed
 from utlis.reservation import convert_payment_status_to_reserved_status
 
 
@@ -202,7 +202,7 @@ class HotelReservationSerializer(serializers.ModelSerializer):
     class Meta:
         model = HotelReservation
         fields = (
-            'id', 'user', 'reserved_status', 'adult_count', 'children_count', 'total_cost', 'room', 'check_in_date',
+            'id', 'user', 'reserved_status', 'passenger_count', 'total_cost', 'room', 'check_in_date',
             'check_out_date', 'payment',)
 
     def get_total_cost(self, obj):
@@ -222,9 +222,9 @@ class HotelReservationSerializer(serializers.ModelSerializer):
             raise exceptions.ValidationError(
                 {"room number": "Room {} for this room number!".format(RoomStatus(data['room'].status))})
 
-        if data["room"].capacity < data["adult_count"] + data["children_count"]:
+        if data["room"].capacity < data["passenger_count"]:
             raise exceptions.ValidationError({
-                "adult_count with children_count": "Room has {} capacity for this room number!".format(
+                "passenger_count": "Room has {} capacity for this room number!".format(
                     data["room"].capacity)})
 
         return data

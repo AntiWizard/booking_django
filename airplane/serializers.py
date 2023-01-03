@@ -1,13 +1,16 @@
 from django.db import transaction, IntegrityError
+from django.utils import timezone
 from rest_framework import serializers, exceptions
 
 from airplane.models import *
 from reservations.base_models.comment import CommentStatus
+from reservations.base_models.passenger import PassengerType
 from reservations.base_models.reservation import ReservedStatus
 from reservations.base_models.seat import SeatStatus
 from reservations.models import PaymentStatus, Payment
 from reservations.serializers import LocationSerializer, PriceByCurrencySerializer, PaymentSerializer
-from utlis.check_obj_airplan import check_status_in_request_data, check_reserved_key_existed
+from utlis.calc_age import calc_age
+from utlis.check_obj import check_reserved_key_existed, check_status_in_request_data
 from utlis.reservation import convert_payment_status_to_reserved_status
 
 
@@ -128,7 +131,7 @@ class AirplanePassengerSerializer(serializers.ModelSerializer):
         model = AirplanePassenger
         fields = (
             'id', 'passenger_code', 'parent', 'seat', 'phone', 'national_id', 'birth_day', 'first_name', 'last_name',
-            'transfer_status',)
+            'transfer_status', 'passenger_type',)
 
         extra_kwargs = {"parent": {'required': False}}
 
@@ -153,7 +156,7 @@ class AirplaneReservationSerializer(serializers.ModelSerializer):
 
         if (data["airplane"].max_reservation - data["airplane"].number_reserved) < data["passenger_count"]:
             raise exceptions.ValidationError({
-                "adult_count with children_count": "Seat has {} capacity for this airplane number: {}!".format(
+                "passenger_count": "Seat has {} capacity for this airplane number: {}!".format(
                     (data["airplane"].max_reservation - data["airplane"].number_reserved),
                     data["airplane"].transport_number)})
         return data
@@ -185,14 +188,17 @@ class AirplaneReservationSerializer(serializers.ModelSerializer):
             update_seats = []
             create_passengers = []
             for passenger, seat in zip(passengers, seats):
-                seat.status = SeatStatus.RESERVED
+                seat.status = SeatStatus.INITIAL
                 update_seats.append(seat)
-                create_passengers.append(
-                    AirplanePassenger(seat=seat, reserved_key=reserve.reserved_key, parent=validated_data['user'],
-                                      **passenger))
+                _passenger = AirplanePassenger(seat=seat, reserved_key=reserve.reserved_key,
+                                               parent=validated_data['user'], **passenger)
+                if calc_age(passenger['birth_day']) < 18:
+                    _passenger.passenger_type = PassengerType.CHILDREN
+
+                create_passengers.append(_passenger)
 
             AirplanePassenger.objects.bulk_create(create_passengers)
-            seats = AirplaneSeat.objects.bulk_update(update_seats, fields=["status"])
+            AirplaneSeat.objects.bulk_update(update_seats, fields=["status"])
 
         except (ValueError, TypeError) as e:
             raise exceptions.ValidationError("invalid data -> {}".format(e))
@@ -227,14 +233,26 @@ def update_reservation(request, **kwargs):
         else:
             raise exceptions.ValidationError("Payment for this reserved: {} was invalid".format(reserved_key))
 
-        seat = reserve.seat
+        passengers = check_reserved_key_existed(reserved_key, AirplanePassenger, True)
         if reserved_status == ReservedStatus.RESERVED:
-            if seat.status == SeatStatus.FREE:
-                seat.status = SeatStatus.RESERVED
-                seat.save()
-                check_and_update_if_airplane_full(seat.airplane_id)
-            else:
-                raise exceptions.ValidationError("Room for this reserved: {} was invalid".format(reserved_key))
+            passengers_update = []
+            seats_update = []
+            for passenger in passengers:
+                if passenger.transfer_status == TransferStatus.INITIAL:
+                    passenger.transfer_status = TransferStatus.RESERVED
+                    passenger.seat.status = SeatStatus.RESERVED
+                    passengers_update.append(passenger)
+                    seats_update.append(passenger.seat)
+                else:
+                    raise exceptions.ValidationError(
+                        "Passenger info for this reserved: {} was invalid".format(reserved_key))
+
+            AirplanePassenger.objects.bulk_update(passengers_update, fields=['transfer_status'])
+            AirplaneSeat.objects.bulk_update(seats_update, fields=['status'])
+            check_and_update_if_airplane_full(reserve.airplane_id, len(passengers))
+
+
+
 
     except IntegrityError as e:
         raise exceptions.ValidationError("Error: {}".format(e))
@@ -244,14 +262,19 @@ def update_reservation(request, **kwargs):
     return {"reserve": AirplaneReservationSerializer(reserve).data}
 
 
-def check_and_update_if_airplane_full(airplane_id):
-    free_seat = AirplaneSeat.objects.filter(airplane_id=airplane_id, status=SeatStatus.FREE)
-    if not free_seat.exists():
-        return Airplane.objects.filter(id=airplane_id).update(residence_status=TransportStatus.FULL)
-    return
+def check_and_update_if_airplane_full(airplane_id, reserved_count):
+    try:
+        airplane = Airplane.objects.filter(id=airplane_id, transport_status=TransportStatus.SPACE,
+                                           transfer_date__gt=timezone.now(), is_valid=True).get()
+        airplane.number_reserved += reserved_count
+        if airplane.number_reserved == airplane.max_reservation:
+            airplane.transport_status = TransportStatus.FULL
+        return airplane.save()
+    except Airplane.DoesNotExist:
+        raise exceptions.ValidationError("Airplane Dose not exist fot this id: {}!".format(airplane))
 
+    # ---------------------------------------------UpdateAirplaneCompanyComment---------------------------------------------
 
-# ---------------------------------------------UpdateAirplaneCompanyComment---------------------------------------------
 
 @transaction.atomic
 def update_airplane_company_comment(request, **kwargs):
