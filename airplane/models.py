@@ -123,7 +123,7 @@ class AirplaneCompanyRating(AbstractRate):
 
     class Meta:
         constraints = [models.UniqueConstraint(
-            fields=('company', 'user', 'rate'), name='unique_company_user_rate')]
+            fields=('company', 'user'), name='unique_company_user')]
 
 
 # ---------------------------------------------AirplaneAddress----------------------------------------------------------

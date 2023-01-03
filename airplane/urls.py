@@ -15,7 +15,7 @@ urlpatterns = [
     path('airplane/payment/<str:reserved_key>/reserving/', PaymentReservationAPIView.as_view(),
          name='airplane-payment-result'),
 
-    path('airplane/company/<str:name>/rate/', CreateAirplaneCompanyRateAPIView.as_view(), name='airplane-rate'),
+    path('airplane/company/<str:name>/rating/', CreateAirplaneCompanyRateAPIView.as_view(), name='airplane-rate'),
     path('airplane/company/<str:name>/rating/<int:pk>/', DetailAirplaneCompanyRateAPIView.as_view(),
          name='airplane-rate-detail'),
 

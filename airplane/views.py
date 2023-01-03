@@ -1,4 +1,3 @@
-from django.utils import timezone
 from rest_framework import generics, response, status
 from rest_framework.permissions import IsAdminUser, AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
@@ -128,14 +127,12 @@ class CreateAirplaneCompanyRateAPIView(AirplaneMixin, generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
-        company = self.get_company(name)
-
-        return AirplaneCompanyRating.objects.filter(company=company, is_valid=True).all()
+        name = self.kwargs.get('name', None)
+        return self.get_company(name)
 
     def create(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
-        request.data['company'] = self.get_queryset().first().company_id
+        request.data['company'] = self.get_queryset().id
 
         return super(CreateAirplaneCompanyRateAPIView, self).create(request, *args, **kwargs)
 
@@ -143,7 +140,8 @@ class CreateAirplaneCompanyRateAPIView(AirplaneMixin, generics.CreateAPIView):
         try:
             super(CreateAirplaneCompanyRateAPIView, self).perform_create(serializer)
         except IntegrityError as e:
-            raise exceptions.ValidationError("Error: {}".format(e))
+            raise exceptions.ValidationError(
+                "Error: This user: {} has rated to company: {}".format(self.request.user, self.get_queryset().name))
 
 
 class DetailAirplaneCompanyRateAPIView(AirplaneMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -151,11 +149,13 @@ class DetailAirplaneCompanyRateAPIView(AirplaneMixin, generics.RetrieveUpdateDes
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         company = self.get_company(name)
 
         if self.request.method in SAFE_METHODS:
             return AirplaneCompanyRating.objects.filter(company=company, is_valid=True).all()
+
+        return AirplaneCompanyRating.objects.filter(company=company).all()
 
     def update(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
@@ -175,7 +175,7 @@ class ListCreateAirplaneCompanyCommentAPIView(AirplaneMixin, generics.ListCreate
     serializer_class = AirplaneCompanyCommentForCreatedSerializer
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         company = self.get_company(name)
         return AirplaneCompanyComment.objects.filter(company=company, status=CommentStatus.APPROVED).all()
 
@@ -198,7 +198,7 @@ class DetailAirplaneCompanyCommentAPIView(AirplaneMixin, generics.RetrieveUpdate
     permission_classes = [IsOwner]
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         company = self.get_company(name)
 
         if self.request.method in SAFE_METHODS:

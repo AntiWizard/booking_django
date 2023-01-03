@@ -271,7 +271,7 @@ def check_and_update_if_airplane_full(airplane_id, reserved_count):
             airplane.transport_status = TransportStatus.FULL
         return airplane.save()
     except Airplane.DoesNotExist:
-        raise exceptions.ValidationError("Airplane Dose not exist fot this id: {}!".format(airplane))
+        raise exceptions.ValidationError("Airplane Dose not exist fot this id: {}!".format(airplane_id))
 
     # ---------------------------------------------UpdateAirplaneCompanyComment---------------------------------------------
 
