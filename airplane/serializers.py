@@ -286,12 +286,14 @@ def update_airplane_company_comment(request, **kwargs):
         raise exceptions.ValidationError("invalid status :{}".format(status))
 
     try:
-        comment = AirplaneCompanyComment.objects.filter(id=comment_id, status=CommentStatus.CREATED).get()
+        comment = AirplaneCompanyComment.objects.filter(id=comment_id).get()
+        if comment.status != CommentStatus.CREATED:
+            raise exceptions.ValidationError("This comment checked")
         comment.status = status
         comment.validated_by = request.user
         comment.save()
 
     except AirplaneCompanyComment.DoesNotExist:
-        raise exceptions.ValidationError("status required")
+        raise exceptions.ValidationError("This comment does not exist")
 
     return AirplaneCompanyCommentForUpdatedSerializer(comment).data

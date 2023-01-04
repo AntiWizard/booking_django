@@ -24,5 +24,6 @@ urlpatterns = [
     path('airplane/company/<str:name>/comment/<int:pk>/', DetailAirplaneCompanyCommentAPIView.as_view(),
          name='airplane-comment-detail'),
 
-    path('airplane/comment/<int:pk>/checking/', CheckAirplaneCommentAPIView.as_view(), name='airplane-comment'),
+    path('airplane/comment/<int:pk>/checking/', CheckAirplaneCommentAPIView.as_view(),
+         name='airplane-comment-checking'),
 ]

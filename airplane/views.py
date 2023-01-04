@@ -133,13 +133,12 @@ class CreateAirplaneCompanyRateAPIView(AirplaneMixin, generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
         request.data['company'] = self.get_queryset().id
-
         return super(CreateAirplaneCompanyRateAPIView, self).create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         try:
             super(CreateAirplaneCompanyRateAPIView, self).perform_create(serializer)
-        except IntegrityError as e:
+        except IntegrityError:
             raise exceptions.ValidationError(
                 "Error: This user: {} has rated to company: {}".format(self.request.user, self.get_queryset().name))
 
@@ -177,7 +176,9 @@ class ListCreateAirplaneCompanyCommentAPIView(AirplaneMixin, generics.ListCreate
     def get_queryset(self):
         name = self.kwargs.get('name', None)
         company = self.get_company(name)
-        return AirplaneCompanyComment.objects.filter(company=company, status=CommentStatus.APPROVED).all()
+        if self.request.method in SAFE_METHODS:
+            return AirplaneCompanyComment.objects.filter(company=company, status=CommentStatus.APPROVED).all()
+        return company
 
     def get_permissions(self):
         if self.request.method in SAFE_METHODS:
@@ -188,12 +189,12 @@ class ListCreateAirplaneCompanyCommentAPIView(AirplaneMixin, generics.ListCreate
     def create(self, request, *args, **kwargs):
 
         request.data['user'] = request.user.id
-        request.data['company'] = self.get_queryset().first().company_id
+        request.data['company'] = self.get_queryset().id
 
         return super(ListCreateAirplaneCompanyCommentAPIView, self).create(request, *args, **kwargs)
 
 
-class DetailAirplaneCompanyCommentAPIView(AirplaneMixin, generics.RetrieveUpdateDestroyAPIView):
+class DetailAirplaneCompanyCommentAPIView(AirplaneMixin, generics.DestroyAPIView):
     serializer_class = AirplaneCompanyCommentForUpdatedSerializer
     permission_classes = [IsOwner]
 
@@ -201,12 +202,8 @@ class DetailAirplaneCompanyCommentAPIView(AirplaneMixin, generics.RetrieveUpdate
         name = self.kwargs.get('name', None)
         company = self.get_company(name)
 
-        if self.request.method in SAFE_METHODS:
-            return AirplaneCompanyComment.objects.filter(
-                company=company, status=CommentStatus.APPROVED).all()
-        else:
-            return AirplaneCompanyComment.objects.filter(
-                company=company, status__in=[CommentStatus.CREATED, CommentStatus.APPROVED]).all()
+        return AirplaneCompanyComment.objects.filter(
+            company=company, status__in=[CommentStatus.CREATED, CommentStatus.APPROVED]).all()
 
     def perform_destroy(self, instance):
         instance.status = CommentStatus.DELETED

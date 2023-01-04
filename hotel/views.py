@@ -37,7 +37,7 @@ class HotelMixin:
 # ---------------------------------------------Hotel-------------------------------------------------------------------
 
 
-class ListCreateHotelAPIView(generics.ListCreateAPIView, HotelMixin):
+class ListCreateHotelAPIView(HotelMixin, generics.ListCreateAPIView):
     queryset = Hotel.objects.filter(is_valid=True).all()
     serializer_class = HotelSerializer
 
@@ -48,7 +48,7 @@ class ListCreateHotelAPIView(generics.ListCreateAPIView, HotelMixin):
             return [IsAdminUser()]
 
 
-class DetailHotelAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
+class DetailHotelAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
 
@@ -59,7 +59,7 @@ class DetailHotelAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
             return Hotel.objects.all()
 
     def get_object(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         obj = self.get_hotel(name)
 
         self.check_object_permissions(self.request, obj)
@@ -78,12 +78,12 @@ class DetailHotelAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
 
 # ---------------------------------------------HotelRoom----------------------------------------------------------------
 
-class ListCreateHotelRoomAPIView(generics.ListCreateAPIView, HotelMixin):
+class ListCreateHotelRoomAPIView(HotelMixin, generics.ListCreateAPIView):
     queryset = HotelRoom.objects.filter(is_valid=True).all().select_related('hotel')
     serializer_class = HotelRoomSerializer
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
         return HotelRoom.objects.filter(hotel=hotel, is_valid=True).all().select_related('hotel')
@@ -99,13 +99,13 @@ class ListCreateHotelRoomAPIView(generics.ListCreateAPIView, HotelMixin):
         return super(ListCreateHotelRoomAPIView, self).create(request, *args, **kwargs)
 
 
-class DetailHotelRoomAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
+class DetailHotelRoomAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = HotelRoom.objects.filter(is_valid=True).all().select_related('hotel')
     serializer_class = HotelRoomSerializer
     lookup_field = 'number'
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
         if self.request.method in SAFE_METHODS:
@@ -130,13 +130,13 @@ class DetailHotelRoomAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
 
 # ---------------------------------------------HotelReservation---------------------------------------------------------
 
-class ListCreateHotelReservationAPIView(generics.CreateAPIView, HotelMixin):
+class ListCreateHotelReservationAPIView(HotelMixin, generics.CreateAPIView):
     queryset = HotelReservation.objects.filter(is_valid=True).all()
     serializer_class = HotelReservationSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
         room_number = self.kwargs.get('number', None)
@@ -149,14 +149,14 @@ class ListCreateHotelReservationAPIView(generics.CreateAPIView, HotelMixin):
         return super(ListCreateHotelReservationAPIView, self).create(request, *args, **kwargs)
 
 
-class DetailHotelReservationAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
+class DetailHotelReservationAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = HotelReservation.objects.filter(is_valid=True).all().select_related('hotel')
     serializer_class = HotelReservationSerializer
     permission_classes = [IsOwner]
     lookup_field = 'reserved_key'
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
         room_number = self.kwargs.get('number', None)
@@ -180,7 +180,7 @@ class DetailHotelReservationAPIView(generics.RetrieveUpdateDestroyAPIView, Hotel
 # ---------------------------------------------PaymentReservation-------------------------------------------------------
 
 
-class PaymentReservationAPIView(generics.CreateAPIView, generics.DestroyAPIView, HotelMixin):
+class PaymentReservationAPIView(HotelMixin, generics.CreateAPIView, generics.DestroyAPIView):
     permission_classes = [IsOwner]
     lookup_field = 'reserved_key'
 
@@ -198,34 +198,32 @@ class PaymentReservationAPIView(generics.CreateAPIView, generics.DestroyAPIView,
 # ---------------------------------------------HotelRating--------------------------------------------------------------
 
 
-class CreateHotelRateAPIView(generics.CreateAPIView, HotelMixin):
+class CreateHotelRateAPIView(HotelMixin, generics.CreateAPIView):
     serializer_class = HotelRateSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
-        hotel = self.get_hotel(name)
-
-        return HotelRating.objects.filter(hotel=hotel).all()
+        name = self.kwargs.get('name', None)
+        return self.get_hotel(name)
 
     def create(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
-        request.data['hotel'] = self.get_queryset().first().hotel_id
+        request.data['hotel'] = self.get_queryset().id
         return super(CreateHotelRateAPIView, self).create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         try:
             super(CreateHotelRateAPIView, self).perform_create(serializer)
-        except IntegrityError as e:
-            raise exceptions.ValidationError("Error: {}".format(e))
+        except IntegrityError:
+            "Error: This user: {} has rated to hotel: {}".format(self.request.user, self.get_queryset().name)
 
 
-class DetailHotelRateAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
+class DetailHotelRateAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = HotelRateSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
         if self.request.method in SAFE_METHODS:
@@ -246,14 +244,16 @@ class DetailHotelRateAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
 # ---------------------------------------------HotelComment-------------------------------------------------------------
 
 
-class ListCreateHotelCommentAPIView(generics.ListCreateAPIView, HotelMixin):
+class ListCreateHotelCommentAPIView(HotelMixin, generics.ListCreateAPIView):
     serializer_class = HotelCommentForCreatedSerializer
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
-        return HotelComment.objects.filter(hotel=hotel, status=CommentStatus.APPROVED).all()
+        if self.request.method in SAFE_METHODS:
+            return HotelComment.objects.filter(hotel=hotel, status=CommentStatus.APPROVED).all()
+        return hotel
 
     def get_permissions(self):
         if self.request.method in SAFE_METHODS:
@@ -263,30 +263,27 @@ class ListCreateHotelCommentAPIView(generics.ListCreateAPIView, HotelMixin):
 
     def create(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
-        request.data['hotel'] = self.get_queryset().first().hotel_id
+        request.data['hotel'] = self.get_queryset().id
         return super(ListCreateHotelCommentAPIView, self).create(request, *args, **kwargs)
 
 
-class DetailHotelCommentAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
+class DetailHotelCommentAPIView(HotelMixin, generics.DestroyAPIView):
     serializer_class = HotelCommentForUpdatedSerializer
     permission_classes = [IsOwner]
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
-        if self.request.method in SAFE_METHODS:
-            return HotelComment.objects.filter(hotel=hotel, status=CommentStatus.APPROVED).all()
-        else:
-            return HotelComment.objects.filter(hotel=hotel,
-                                               status__in=[CommentStatus.CREATED, CommentStatus.APPROVED]).all()
+        return HotelComment.objects.filter(hotel=hotel, status__in=[CommentStatus.CREATED, CommentStatus.APPROVED]) \
+            .all()
 
     def perform_destroy(self, instance):
         instance.status = CommentStatus.DELETED
         instance.save()
 
 
-class CheckHotelCommentAPIView(generics.UpdateAPIView, HotelMixin):
+class CheckHotelCommentAPIView(HotelMixin, generics.UpdateAPIView):
     permission_classes = [IsAdminUser]
 
     def update(self, request, *args, **kwargs):
@@ -296,25 +293,25 @@ class CheckHotelCommentAPIView(generics.UpdateAPIView, HotelMixin):
 
 # ---------------------------------------------HotelGallery-------------------------------------------------------------
 
-class ListCreateHotelGalleryAPIView(generics.ListCreateAPIView, HotelMixin):
+class ListCreateHotelGalleryAPIView(HotelMixin, generics.ListCreateAPIView):
     queryset = HotelGallery.objects.filter().all()
     serializer_class = HotelGallerySerializer
     permission_classes = [IsAdminUser]
 
     def create(self, request, *args, **kwargs):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
         request.data['hotel'] = hotel.id
 
         return super(ListCreateHotelGalleryAPIView, self).create(request, *args, **kwargs)
 
 
-class DetailHotelGalleryAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
+class DetailHotelGalleryAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = HotelGallerySerializer
     permission_classes = [IsAdminUser]
 
     def get_queryset(self):
-        name = self.kwargs.get('name', None).replace('-', ' ')
+        name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
         if self.request.method in SAFE_METHODS:
@@ -334,16 +331,16 @@ class DetailHotelGalleryAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixi
 
 # ---------------------------------------------HotelImage---------------------------------------------------------------
 
-class ListCreateHotelImageAPIView(generics.ListCreateAPIView, HotelMixin):
+class ListCreateHotelImageAPIView(HotelMixin, generics.ListCreateAPIView):
     queryset = HotelImage.objects.filter().all()
     serializer_class = HotelImageSerializer
     permission_classes = [IsAdminUser]
 
     def get_queryset(self):
-        hotel_name = self.kwargs.get('hotel_name', None).replace('-', ' ')
+        hotel_name = self.kwargs.get('hotel_name', None)
         hotel = self.get_hotel(hotel_name)
 
-        gallery_name = self.kwargs.get('gallery_name', None).replace('-', ' ')
+        gallery_name = self.kwargs.get('gallery_name', None)
         gallery = self.get_gallery(gallery_name, hotel)
 
         return HotelImage.objects.filter(gallery=gallery).all()
@@ -358,16 +355,16 @@ class ListCreateHotelImageAPIView(generics.ListCreateAPIView, HotelMixin):
             raise exceptions.ValidationError("Just one image can be main for any galley!")
 
 
-class DetailHotelImageAPIView(generics.RetrieveUpdateDestroyAPIView, HotelMixin):
+class DetailHotelImageAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = HotelImage.objects.all()
     serializer_class = HotelImageSerializer
     permission_classes = [IsAdminUser]
 
     def get_queryset(self):
-        hotel_name = self.kwargs.get('hotel_name', None).replace('-', ' ')
+        hotel_name = self.kwargs.get('hotel_name', None)
         hotel = self.get_hotel(hotel_name)
 
-        gallery_name = self.kwargs.get('gallery_name', None).replace('-', ' ')
+        gallery_name = self.kwargs.get('gallery_name', None)
         gallery = self.get_gallery(gallery_name, hotel)
 
         return HotelImage.objects.filter(gallery=gallery).all()

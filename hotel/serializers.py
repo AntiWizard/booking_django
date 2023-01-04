@@ -311,12 +311,14 @@ def update_hotel_comment(request, **kwargs):
         raise exceptions.ValidationError("invalid status :{}".format(status))
 
     try:
-        comment = HotelComment.objects.filter(id=comment_id, status=CommentStatus.CREATED).get()
+        comment = HotelComment.objects.filter(id=comment_id).get()
+        if comment.status != CommentStatus.CREATED:
+            raise exceptions.ValidationError("This comment checked")
         comment.status = status
         comment.validated_by = request.user
         comment.save()
 
     except HotelComment.DoesNotExist:
-        raise exceptions.ValidationError("status required")
+        raise exceptions.ValidationError("This comment does not exist")
 
     return HotelCommentForUpdatedSerializer(comment).data
