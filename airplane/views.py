@@ -25,6 +25,14 @@ class AirplaneMixin:
         except AirplaneCompany.DoesNotExist:
             raise exceptions.ValidationError("Airplane company Dose not exist with this name in url!")
 
+    def get_reservation(self, reserved_key, is_valid):
+        try:
+            if is_valid:
+                return AirplaneReservation.objects.filter(reserved_key=reserved_key, is_valid=is_valid).get()
+            return AirplaneReservation.objects.filter(reserved_key=reserved_key).get()
+        except AirplaneReservation.DoesNotExist:
+            raise exceptions.ValidationError("This reserved Dose not exist with this key: {}!".format(reserved_key))
+
     def get_seat(self, number, airplane, is_valid=True):
         try:
             return AirplaneSeat.objects.filter(number=number, airplane=airplane, is_valid=is_valid).get()
@@ -85,27 +93,13 @@ class DetailAirplaneReservationAPIView(AirplaneMixin, generics.RetrieveUpdateDes
     permission_classes = [IsOwner]
     lookup_field = 'reserved_key'
 
-    def get_queryset(self):
-        pk = self.kwargs.get('pk', None)
-        airplane = self.get_airplane(pk)
-
-        seat_number = self.kwargs.get('number', None)
-        seat = self.get_seat(seat_number, airplane)
-        if self.request.method in SAFE_METHODS:
-            return AirplaneReservation.objects.filter(seat=seat, is_valid=True).get().select_related('room',
-                                                                                                     'room__hotel')
-        else:
-            return AirplaneReservation.objects.filter(seat=seat).get()
-
     def update(self, request, *args, **kwargs):
-
         request.data['user'] = request.user.id
-        request.data['seat'] = self.get_queryset().seat_id
+        request.data['airplane'] = self.get_object().airplane_id
         return super(DetailAirplaneReservationAPIView, self).update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
-        instance.is_valid = False
-        instance.save()
+        cancel_reservation(instance)
 
 
 # ---------------------------------------------PaymentReservation-------------------------------------------------------

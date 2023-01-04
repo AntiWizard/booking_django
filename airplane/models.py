@@ -59,10 +59,6 @@ class Airplane(AbstractTransfer):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.pilot = self.pilot.title()
 
-        last_number = Airplane.objects.all().order_by('-transport_number').first()
-        if last_number:
-            self.transport_number = last_number.transport_number + 1
-
         super().save(force_insert, force_update, using, update_fields)
 
     class Meta:
