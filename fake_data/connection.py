@@ -1,4 +1,5 @@
 import psycopg2
+from decouple import config
 
 from address import insert_airport_address, insert_hotel_address
 from airplane import *
@@ -48,7 +49,11 @@ def airplane():
 
 
 conn = psycopg2.connect(
-    database="postgres", user='postgres', password='test', host='127.0.0.1', port='5432'
+    database=config('DB_NAME'),
+    user=config('DB_USER'),
+    password=config('DB_PASS'),
+    host=config('DB_HOST'),
+    port='5432'
 )
 conn.autocommit = True
 cursor = conn.cursor()
