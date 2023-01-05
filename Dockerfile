@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /project
 
-RUN mkdir -p logs && mkdir -p /var/log/gunicorn
+RUN mkdir -p /var/log/gunicorn
 
 
 CMD ["python","manage.py","runserver","0.0.0.0:8000"]
