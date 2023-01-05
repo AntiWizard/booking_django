@@ -1,4 +1,4 @@
-from rest_framework import generics, response, status
+from rest_framework import generics, response, status, filters
 from rest_framework.permissions import IsAdminUser, AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -50,6 +50,8 @@ class ListAirplaneAPIView(generics.ListAPIView):
         transport_status=TransportStatus.SPACE, transfer_date__gt=timezone.now(), is_valid=True).all()
     serializer_class = AirplaneSerializer
     permission_classes = [AllowAny]
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ['source', 'destination', 'transport_status', 'transfer_date']
 
 
 class DetailAirplaneAPIView(generics.RetrieveAPIView):
@@ -65,6 +67,8 @@ class ListAirplaneSeatAPIView(AirplaneMixin, generics.ListAPIView):
     authentication_classes = []
     serializer_class = AirplaneSeatSerializer
     permission_classes = [AllowAny]
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ['airplane__transport_status', 'status', 'transfer_date']
 
     def get_queryset(self):
         pk = self.kwargs.get('pk', None)

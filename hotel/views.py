@@ -1,4 +1,4 @@
-from rest_framework import generics, response, status
+from rest_framework import generics, response, status, filters
 from rest_framework.permissions import IsAdminUser, AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -44,6 +44,8 @@ class HotelMixin:
 class ListCreateHotelAPIView(HotelMixin, generics.ListCreateAPIView):
     queryset = Hotel.objects.filter(is_valid=True).all()
     serializer_class = HotelSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ['star', 'name', 'residence_status']
 
     def get_permissions(self):
         if self.request.method in SAFE_METHODS:
@@ -85,6 +87,8 @@ class DetailHotelAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
 class ListCreateHotelRoomAPIView(HotelMixin, generics.ListCreateAPIView):
     queryset = HotelRoom.objects.filter(is_valid=True).all().select_related('hotel')
     serializer_class = HotelRoomSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ['capacity', 'status', ]
 
     def get_queryset(self):
         name = self.kwargs.get('name', None)
