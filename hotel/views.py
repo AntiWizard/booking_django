@@ -16,8 +16,7 @@ class HotelMixin:
 
     def get_hotel(self, name, is_valid=True):
         try:
-            return Hotel.objects.filter(name__iexact=name, residence_status=ResidenceStatus.SPACE,
-                                        is_valid=is_valid).get()
+            return Hotel.objects.filter(name__iexact=name, is_valid=is_valid).get()
         except Hotel.DoesNotExist:
             raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
 

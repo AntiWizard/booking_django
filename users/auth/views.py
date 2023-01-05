@@ -1,12 +1,9 @@
-import json
-
-import requests
 from django.core.cache import cache
 from rest_framework import generics, status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.throttling import AnonRateThrottle
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.auth.serializers import OTPSerializer, LoginSerializer
 from users.models import User
@@ -15,25 +12,22 @@ from users.tasks import send_sms_to_user
 from utlis.auth.otp_generator import otp_generator
 
 
-class GenerateOTP(generics.ListAPIView):
+class GenerateOTP(generics.CreateAPIView):
     serializer_class = OTPSerializer
     throttle_classes = [AnonRateThrottle]
 
-    def list(self, request, *args, **kwargs):
-        if request.data.get('phone'):  # TODO check phone correct logic
+    def post(self, request, *args, **kwargs):
+        if request.data.get('phone'):
             otp = otp_generator(10000, 99999)
-            code = {"otp": otp}
-            cache.set(request.data['phone'], code["otp"], 60 * 2)
+            cache.set(request.data['phone'], otp, 60 * 2)
 
         else:
             data = {"error": "phone field required"}
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.get_serializer(code)
+        send_sms_to_user.delay(request.data['phone'], otp)
 
-        send_sms_to_user.delay(request.data['phone'], str(otp))
-
-        return Response(serializer.data)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LoginUserAPIView(generics.CreateAPIView):
@@ -41,27 +35,25 @@ class LoginUserAPIView(generics.CreateAPIView):
     serializer_class = LoginSerializer
     permission_classes = [IsAnonymous]
 
-    # throttle_scope = 'create_user'
-
     def post(self, request, *args, **kwargs):
-        if request.data.get('phone') and request.data.get('otp'):  # TODO check phone correct logic
+        if request.data.get('phone') and request.data.get('otp'):
             phone = request.data['phone']
+            otp = request.data["otp"]
 
             user_otp = cache.get(phone)
 
-            if str(user_otp) == request.data["otp"]:
-                user = User.objects.filter(phone=phone)
+            if user_otp == otp:
+                try:
+                    user = User.objects.get(phone=phone)
+                except User.DoesNotExist:
+                    user = User.objects.create_user(phone=phone)
 
-                if not user.exists():
-                    super().post(request, *args, **kwargs)
-
-                response_login = requests.post(
-                    request.build_absolute_uri(reverse('token_obtain')),
-                    data={"phone": request.data['phone'], "otp": request.data["otp"]})
-
-                token = json.loads(response_login.content)
-                return Response(token, response_login.status_code)
-
+                refresh = RefreshToken.for_user(user)
+                context = {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }
+                return Response(context)
             else:
                 raise AuthenticationFailed("{} invalid otp".format(request.data["otp"]))
 

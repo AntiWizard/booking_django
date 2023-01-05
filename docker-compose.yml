@@ -32,10 +32,17 @@ services:
     depends_on:
       - backend
 
-#  db:
-#    image: postgres
-#    restart: always
-#    environment:
-#      POSTGRES_PASSWORD: example
+
+#  database:
+#    image: postgres:latest
+#    container_name: backend-db
+#    ports:
+#      - 5432:5432
 #    volumes:
-#      - pgdata:/var/lib/postgresql/data
+#      - postgresdb/:/var/lib/postgresql/data/
+#    networks:
+#      - docker-network
+#    environment:
+#      POSTGRES_USER: devuser
+#      POSTGRES_PASSWORD: devpw
+#      POSTGRES_DB: devdb
