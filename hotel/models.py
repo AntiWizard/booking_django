@@ -91,7 +91,7 @@ class HotelRating(AbstractRate):
     hotel = models.ForeignKey(Hotel, related_name='rate', on_delete=models.CASCADE)
 
     def __str__(self):
-        return "{} got {} from {}".format(self.hotel.name, self.hotel.rate, self.user.phone)
+        return "{} : {}".format(self.hotel.name, self.hotel.rate)
 
     class Meta:
         constraints = [models.UniqueConstraint(

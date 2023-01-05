@@ -54,7 +54,7 @@ class Airplane(AbstractTransfer):
         return price.price or -1
 
     def __str__(self):
-        return "{} : {}".format(self.transport_number, self.pilot)
+        return "{} : {}".format(self.company.airport_terminal.airport.title, self.transport_number)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.pilot = self.pilot.title()
@@ -75,7 +75,7 @@ class AirplaneSeat(AbstractSeat):
     airplane = models.ForeignKey(Airplane, related_name='seat', on_delete=models.CASCADE)
 
     def __str__(self):
-        return "{}: {}".format(self.airplane.id, self.number)
+        return "{}: {}".format(self.airplane.company.airport_terminal.airport.title, self.number)
 
     class Meta:
         constraints = [models.UniqueConstraint(
@@ -106,7 +106,7 @@ class AirplaneReservation(AbstractReservation):
     passenger_count = models.PositiveSmallIntegerField()
 
     def __str__(self):
-        return "{} - {} - {}".format(self.user.phone, self.airplane.company.airport_terminal.airport.title,
+        return "{} - {} - {}".format(self.airplane.company.airport_terminal.airport.title,
                                      self.airplane.transport_number)
 
 
