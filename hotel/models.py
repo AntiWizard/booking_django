@@ -4,6 +4,7 @@ from django.db import models
 from reservations.base_models.address import AbstractAddress
 from reservations.base_models.comment import AbstractComment
 from reservations.base_models.gallery import AbstractGallery, AbstractImage
+from reservations.base_models.passenger import AbstractPassenger, StayStatus
 from reservations.base_models.rate import AbstractRate
 from reservations.base_models.reservation import AbstractReservationResidence, ReservedStatus
 from reservations.base_models.residence import AbstractResidence
@@ -57,7 +58,19 @@ class HotelRoom(AbstractRoom):
             fields=('hotel', 'number'), name='unique_hotel_number_seat')]
 
 
+# -----------------------------------------------Passengers-------------------------------------------------------------
+
+
+class HotelPassenger(AbstractPassenger):
+    room = models.ForeignKey(HotelRoom, related_name='room', on_delete=models.CASCADE)
+    stay_status = models.CharField(max_length=20, choices=StayStatus.choices, default=StayStatus.INITIAL)
+
+    def __str__(self):
+        return "{}: {} -> {}".format(self.room.hotel.name, self.room.number, self.national_id)
+
+
 # ----------------------------------------------HotelReservation--------------------------------------------------------
+
 
 class HotelReservation(AbstractReservationResidence):
     room = models.ForeignKey(HotelRoom, on_delete=models.PROTECT, related_name="reservation")

@@ -5,12 +5,14 @@ from rest_framework import serializers, exceptions
 
 from hotel.models import *
 from reservations.base_models.comment import CommentStatus
+from reservations.base_models.passenger import PassengerType
 from reservations.base_models.reservation import ReservedStatus
 from reservations.base_models.residence import ResidenceStatus
 from reservations.base_models.room import RoomStatus
 from reservations.models import Payment, PaymentStatus
 from reservations.serializers import LocationSerializer, PriceByCurrencySerializer, PaymentSerializer
 from reservations.sub_models.price import Price, Currency
+from utlis.calc_age import calc_age
 from utlis.check_obj import check_status_in_request_data, check_reserved_key_existed
 from utlis.reservation import convert_payment_status_to_reserved_status
 
@@ -193,39 +195,53 @@ class HotelRoomSerializer(serializers.ModelSerializer):
         return instance
 
 
+# ---------------------------------------------HotelPassenger--------------------------------------------------------
+
+class HotelPassengerSerializer(serializers.ModelSerializer):
+    room = HotelRoomSerializer(required=False)
+
+    class Meta:
+        model = HotelPassenger
+        fields = (
+            'id', 'passenger_code', 'parent', 'room', 'phone', 'national_id', 'birth_day', 'first_name', 'last_name',
+            'stay_status', 'passenger_type',)
+
+        extra_kwargs = {"parent": {'required': False}}
+
+
 # ---------------------------------------------HotelReservation---------------------------------------------------------
 
 class HotelReservationSerializer(serializers.ModelSerializer):
     total_cost = serializers.SerializerMethodField()
     payment = PaymentSerializer(many=False, required=False)
+    passenger = HotelPassengerSerializer(many=True, required=False)
 
     class Meta:
         model = HotelReservation
         fields = (
             'id', 'user', 'reserved_status', 'passenger_count', 'total_cost', 'room', 'check_in_date',
-            'check_out_date', 'payment',)
+            'check_out_date', 'payment', 'passenger',)
 
     def get_total_cost(self, obj):
-        return {"cost": obj.room.price.value,
-                "currency": obj.room.price.currency.code}
+        return {"cost": obj.passenger_count * obj.room.hotel.price_per_night.value,
+                "currency": obj.room.hotel.price_per_night.currency.code}
 
     def validate(self, data):
-        if data["room"].hotel.residence_status == ResidenceStatus.FULL:
-            raise exceptions.ValidationError("This hotel has full!")
-        elif data["room"].hotel.residence_status == ResidenceStatus.PROBLEM:
-            raise exceptions.ValidationError("This hotel has problem for reservation!")
 
         if not (data['check_out_date'] > data['check_in_date'] >= timezone.now().date()):
             raise exceptions.ValidationError({"check_out_date with check_in_date": "invalid date"})
 
-        if data["room"].status != RoomStatus.FREE:
+        if self.context['request'].method == "POST" and data["room"].status != RoomStatus.FREE:
             raise exceptions.ValidationError(
-                {"room number": "Room {} for this room number!".format(RoomStatus(data['room'].status))})
+                {"Room {} cant creatable!".format(RoomStatus(data['room'].status))})
+
+        if self.context['request'].method in ["PUT", "PATCH", "DELETE"] \
+                and data["room"].status not in [RoomStatus.INITIAL, RoomStatus.RESERVED]:
+            raise exceptions.ValidationError(
+                {"Room {} cant updatable!".format(RoomStatus(data['room'].status))})
 
         if data["room"].capacity < data["passenger_count"]:
-            raise exceptions.ValidationError({
-                "passenger_count": "Room has {} capacity for this room number!".format(
-                    data["room"].capacity)})
+            raise exceptions.ValidationError("Need to get more room for this count of passengers")
 
         return data
 
@@ -235,20 +251,128 @@ class HotelReservationSerializer(serializers.ModelSerializer):
         payment = Payment.objects.filter(reserved_key=instance.reserved_key).get()
         ret['payment'] = PaymentSerializer(payment).data
 
-        ret['room'] = instance.room.number
+        passengers = HotelPassenger.objects.filter(reserved_key=instance.reserved_key).all()
+        ret['passengers'] = HotelPassengerSerializer(passengers, many=True).data
 
         return ret
 
     @transaction.atomic
     def create(self, validated_data):
+        room = validated_data['room']
+        passengers = validated_data.pop('passenger', None)
+
+        if len(passengers) != validated_data['passenger_count']:
+            raise exceptions.ValidationError("passenger information uncompleted!")
+
         try:
             reserve = HotelReservation.objects.create(**validated_data)
             Payment.objects.create(user=reserve.user, reserved_key=reserve.reserved_key)
+
+            create_passengers = []
+
+            for passenger in passengers:
+                _passenger = HotelPassenger(room=room, reserved_key=reserve.reserved_key,
+                                            parent=validated_data['user'], **passenger)
+                if calc_age(passenger['birth_day']) < 18:
+                    _passenger.passenger_type = PassengerType.CHILDREN
+
+                create_passengers.append(_passenger)
+
+            HotelPassenger.objects.bulk_create(create_passengers)
+
+            room.status = RoomStatus.INITIAL
+            room.save()
+
+            check_and_update_if_hotel_full(room.hotel_id)
+
         except (ValueError, TypeError) as e:
             raise exceptions.ValidationError("invalid data -> {}".format(e))
         except IntegrityError:
             raise exceptions.ValidationError("Each user has only one record reserved room!")
+        except HotelRoom.DoesNotExist:
+            raise exceptions.ValidationError("This room not reservable")
+        except Exception as e:
+            raise exceptions.ValidationError("Error: {}".format(e))
+
         return reserve
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        reserved_key = instance.reserved_key
+
+        passengers = validated_data.pop('passenger', None)
+
+        if instance.passenger_count != validated_data['passenger_count']:
+            raise exceptions.ValidationError("passenger information uncompleted!")
+
+        old_passengers = HotelPassenger.objects.filter(
+            reserved_key=reserved_key, stay_status=StayStatus.INITIAL).all()
+
+        try:
+            for passenger in passengers:
+                update_passenger = old_passengers.filter(national_id=passenger['national_id'])
+                if update_passenger.exists():
+                    update_passenger.update(**passenger)
+                else:
+                    raise exceptions.ValidationError("Passenger info not existed")
+
+        except (ValueError, TypeError) as e:
+            raise exceptions.ValidationError("invalid data -> {}".format(e))
+        except IntegrityError as e:
+            raise exceptions.ValidationError("Each user has only one record reserved seat!")
+        except Exception as e:
+            raise e
+
+        return instance
+
+
+@transaction.atomic
+def cancel_hotel_reservation(instance):
+    room = instance.room
+
+    try:
+        payment = Payment.objects.filter(reserved_key=instance.reserved_key, payment_status=PaymentStatus.SUCCESS).get()
+        passengers = HotelPassenger.objects.filter(reserved_key=instance.reserved_key,
+                                                   stay_status=StayStatus.RESERVED).all()
+
+        if instance.reserved_status == ReservedStatus.RESERVED and payment \
+                and passengers.count() == instance.passenger_count:
+
+            payment.payment_status = PaymentStatus.CANCELLED
+            payment.save()
+
+            instance.reserved_status = ReservedStatus.CANCELLED
+            instance.save()
+
+            update_passengers = []
+            for passenger in passengers:
+                if passenger.stay_status == StayStatus.RESERVED:
+                    passenger.stay_status = StayStatus.CANCELLED
+                    update_passengers.append(passenger)
+
+                else:
+                    raise exceptions.ValidationError("This passenger :{} transfer_status invalid".format(passenger.id))
+
+            HotelPassenger.objects.bulk_update(update_passengers, fields=['stay_status'])
+
+            if room.status == RoomStatus.RESERVED:
+                room.status = RoomStatus.FREE
+                room.save()
+            else:
+                raise exceptions.ValidationError("This room :{} room status invalid".format(room.number))
+
+            if room.hotel.residence_status == ResidenceStatus.FULL:
+                room.hotel.residence_status = ResidenceStatus.SPACE
+                room.hotel.save()
+
+        else:
+            raise exceptions.ValidationError(
+                "This instance :{} reserved_status invalid".format(instance.reserved_status))
+
+    except (ValueError, TypeError) as e:
+        raise exceptions.ValidationError("invalid data -> {}".format(e))
+    except Exception as e:
+        raise exceptions.ValidationError("Error: {}".format(e))
 
 
 # ---------------------------------------------ResultReservation-------------------------------------------------------
@@ -275,27 +399,42 @@ def update_reservation(request, **kwargs):
         else:
             raise exceptions.ValidationError("Payment for this reserved: {} was invalid".format(reserved_key))
 
+        passengers = check_reserved_key_existed(reserved_key, HotelPassenger, True)
         room = reserve.room
         if reserved_status == ReservedStatus.RESERVED:
-            if room.status == RoomStatus.FREE:
+            passengers_update = []
+            for passenger in passengers:
+                if passenger.stay_status == StayStatus.INITIAL:
+                    passenger.stay_status = StayStatus.RESERVED
+                    passengers_update.append(passenger)
+
+                else:
+                    raise exceptions.ValidationError(
+                        "Passenger info for this reserved: {} was invalid".format(reserved_key))
+
+            if room.status == RoomStatus.INITIAL:
                 room.status = RoomStatus.RESERVED
                 room.save()
+                HotelPassenger.objects.bulk_update(passengers_update, fields=['stay_status'])
                 check_and_update_if_hotel_full(room.hotel_id)
             else:
                 raise exceptions.ValidationError("Room for this reserved: {} was invalid".format(reserved_key))
+
 
     except IntegrityError as e:
         raise exceptions.ValidationError("Error: {}".format(e))
     except (ValueError, TypeError) as e:
         raise exceptions.ValidationError("invalid data -> {}".format(e))
+    except Exception as e:
+        raise exceptions.ValidationError("Error: {}".format(e))
 
     return {"reserve": HotelReservationSerializer(reserve).data}
 
 
 def check_and_update_if_hotel_full(hotel_id):
-    free_room = HotelRoom.objects.filter(hotel__id=hotel_id, status=RoomStatus.FREE)
+    free_room = HotelRoom.objects.filter(hotel__id=hotel_id, status=RoomStatus.FREE, is_valid=True)
     if not free_room.exists():
-        return Hotel.objects.filter(id=hotel_id).update(residence_status=ResidenceStatus.FULL)
+        return Hotel.objects.filter(id=hotel_id, is_valid=True).update(residence_status=ResidenceStatus.FULL)
     return
 
 

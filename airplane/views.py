@@ -88,18 +88,23 @@ class CreateAirplaneReservationAPIView(AirplaneMixin, generics.CreateAPIView):
 
 
 class DetailAirplaneReservationAPIView(AirplaneMixin, generics.RetrieveUpdateDestroyAPIView):
-    queryset = AirplaneReservation.objects.filter(is_valid=True).all()
+    queryset = AirplaneReservation.objects.filter(reserved_status__in=[ReservedStatus.INITIAL, ReservedStatus.RESERVED],
+                                                  is_valid=True).all()
     serializer_class = AirplaneReservationSerializer
     permission_classes = [IsOwner]
     lookup_field = 'reserved_key'
 
     def update(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
-        request.data['airplane'] = self.get_object().airplane_id
+        try:
+            request.data['airplane'] = self.get_object().airplane_id
+        except Exception as e:
+            raise exceptions.ValidationError(
+                "Reservation record not found for this reserved key: {}".format(self.kwargs['reserved_key']))
         return super(DetailAirplaneReservationAPIView, self).update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
-        cancel_reservation(instance)
+        cancel_airplane_reservation(instance)
 
 
 # ---------------------------------------------PaymentReservation-------------------------------------------------------

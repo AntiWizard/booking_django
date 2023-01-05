@@ -36,16 +36,12 @@ class AirportSerializer(serializers.ModelSerializer):
 
 
 class AirportTerminalSerializer(serializers.ModelSerializer):
-    # airplane = AirportSerializer
-
     class Meta:
         model = AirportTerminal
         fields = ('id', 'number', 'airport',)
 
 
 class AirplaneCompanySerializer(serializers.ModelSerializer):
-    # airport_terminal = AirportTerminalSerializer
-
     class Meta:
         model = AirplaneCompany
         fields = ('id', 'name', 'airport_terminal',)
@@ -153,7 +149,6 @@ class AirplaneReservationSerializer(serializers.ModelSerializer):
                 "currency": obj.airplane.price_per_seat.currency.code}
 
     def validate(self, data):
-
         if (data["airplane"].max_reservation - data["airplane"].number_reserved) < data["passenger_count"]:
             raise exceptions.ValidationError({
                 "passenger_count": "Seat has {} capacity for this airplane number: {}!".format(
@@ -209,88 +204,28 @@ class AirplaneReservationSerializer(serializers.ModelSerializer):
         except IntegrityError as e:
             raise exceptions.ValidationError("Each user has only one record reserved seat!")
         except Exception as e:
-            raise e
+            raise exceptions.ValidationError("Error: {}".format(e))
         return reserve
 
     @transaction.atomic
     def update(self, instance, validated_data):
         reserved_key = instance.reserved_key
-        airplane = validated_data['airplane']
 
         passengers = validated_data.pop('passenger', None)
-        if len(passengers) != validated_data['passenger_count']:
+
+        if instance.passenger_count != validated_data['passenger_count']:
             raise exceptions.ValidationError("passenger information uncompleted!")
 
         old_passengers = AirplanePassenger.objects.filter(
             reserved_key=reserved_key, transfer_status=TransferStatus.INITIAL).all()
 
-        seats = AirplaneSeat.objects.filter(airplane_id=airplane, status=SeatStatus.FREE) \
-            .order_by('number').all()
-
-        if validated_data['passenger_count'] > seats.count() + len(old_passengers):
-            raise exceptions.ValidationError("not enough seats!")
-
         try:
-            create_new_passenger = []
-            update_seats = []
-            index_seat_number = 0
-            if len(old_passengers) < len(passengers):
-                for passenger in passengers:
-                    new_passenger = old_passengers.filter(national_id=passenger['national_id'])
-                    if new_passenger.exists():
-                        new_passenger.update(**passenger)
-                    else:
-                        _seat = seats[index_seat_number]
-                        _seat.status = SeatStatus.INITIAL
-                        create_new_passenger.append(
-                            AirplanePassenger(seat=_seat, parent_id=instance.user_id
-                                              , reserved_key=reserved_key, **passenger))
-                        update_seats.append(_seat)
-                        index_seat_number += 1
-
-                if create_new_passenger:
-                    AirplanePassenger.objects.bulk_create(create_new_passenger)
-                    AirplaneSeat.objects.bulk_update(update_seats, fields=['status'])
-
-                    airplane.number_reserved += len(create_new_passenger)
-                    airplane.save()
-
-            else:
-                passengers_national_ids = [item['national_id'] for item in passengers]
-                passenger_checked = []
-                for _passenger in old_passengers:
-                    if _passenger.national_id in passengers_national_ids:
-                        for attr, value in passengers[(passengers_national_ids.index(_passenger.national_id))].items():
-                            setattr(_passenger, attr, value)
-                        passenger_checked.append(_passenger.national_id)
-                    else:
-                        _passenger.seat.status = SeatStatus.FREE
-                        update_seats.append(_passenger.seat)
-                        _passenger.delete()
-
-                check_update_seat = []
-                for id in passengers_national_ids:
-                    if id not in passenger_checked:
-                        passenger = passengers[passengers.index(id)]
-                        for seat in update_seats:
-                            create_new_passenger.append(
-                                AirplanePassenger(seat=seat, parent_id=instance.user_id
-                                                  , reserved_key=reserved_key, **passenger))
-                            check_update_seat.append(seat)
-                        else:
-                            create_new_passenger.append(
-                                AirplanePassenger(seat=seats[index_seat_number], parent_id=instance.user_id
-                                                  , reserved_key=reserved_key, **passenger))
-                            index_seat_number += 1
-
-                if update_seats:
-                    AirplaneSeat.objects.bulk_update(update_seats, fields=['status'])
-
-                    airplane.number_reserved -= len(update_seats)
-                    airplane.save()
-
-            instance.passenger_count = validated_data['passenger_count']
-            instance.save()
+            for passenger in passengers:
+                update_passenger = old_passengers.filter(national_id=passenger['national_id'])
+                if update_passenger.exists():
+                    update_passenger.update(**passenger)
+                else:
+                    raise exceptions.ValidationError("Passenger info not existed")
 
         except (ValueError, TypeError) as e:
             raise exceptions.ValidationError("invalid data -> {}".format(e))
@@ -303,7 +238,7 @@ class AirplaneReservationSerializer(serializers.ModelSerializer):
 
 
 @transaction.atomic
-def cancel_reservation(instance):
+def cancel_airplane_reservation(instance):
     airplane = instance.airplane
 
     try:
@@ -320,11 +255,6 @@ def cancel_reservation(instance):
             instance.reserved_status = ReservedStatus.CANCELLED
             instance.save()
 
-            airplane.number_reserved -= instance.passenger_count
-            if airplane.transport_status == TransportStatus.FULL:
-                airplane.transport_status = TransportStatus.SPACE
-            airplane.save()
-
             update_passengers = []
             update_seats = []
             for passenger in passengers:
@@ -339,10 +269,15 @@ def cancel_reservation(instance):
                     passenger.seat.status = SeatStatus.FREE
                     update_seats.append(passenger.seat)
                 else:
-                    raise exceptions.ValidationError("This seat :{} seat_status invalid".format(passenger.seat.id))
+                    raise exceptions.ValidationError("This seat :{} seat status invalid".format(passenger.seat.id))
 
             AirplanePassenger.objects.bulk_update(update_passengers, fields=['transfer_status'])
             AirplaneSeat.objects.bulk_update(update_seats, fields=['status'])
+
+            airplane.number_reserved -= instance.passenger_count
+            if airplane.transport_status == TransportStatus.FULL:
+                airplane.transport_status = TransportStatus.SPACE
+            airplane.save()
 
         else:
             raise exceptions.ValidationError(

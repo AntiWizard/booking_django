@@ -16,13 +16,17 @@ class HotelMixin:
 
     def get_hotel(self, name, is_valid=True):
         try:
-            return Hotel.objects.filter(name__iexact=name, is_valid=is_valid).get()
+            return Hotel.objects.filter(name__iexact=name, residence_status=ResidenceStatus.SPACE,
+                                        is_valid=is_valid).get()
         except Hotel.DoesNotExist:
             raise exceptions.ValidationError("Hotel Dose not exist with this name in url!")
 
     def get_room(self, number, hotel, is_valid=True):
         try:
-            return HotelRoom.objects.filter(number=number, hotel=hotel, is_valid=is_valid).get()
+            room = HotelRoom.objects.filter(number=number, hotel=hotel, is_valid=is_valid).get()
+            if room.status != RoomStatus.FREE:
+                raise exceptions.ValidationError("This room not free yet in this hotel: {}!".format(hotel.name))
+            return room
         except HotelRoom.DoesNotExist:
             raise exceptions.ValidationError("room Dose not exist for this hotel: {}!".format(hotel.name))
 
@@ -130,51 +134,40 @@ class DetailHotelRoomAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
 
 # ---------------------------------------------HotelReservation---------------------------------------------------------
 
-class ListCreateHotelReservationAPIView(HotelMixin, generics.CreateAPIView):
-    queryset = HotelReservation.objects.filter(is_valid=True).all()
+class CreateHotelReservationAPIView(HotelMixin, generics.CreateAPIView):
     serializer_class = HotelReservationSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def create(self, request, *args, **kwargs):
         name = self.kwargs.get('name', None)
         hotel = self.get_hotel(name)
 
         room_number = self.kwargs.get('number', None)
         room = self.get_room(room_number, hotel)
-        return HotelReservation.objects.filter(room=room, is_valid=True).get().select_related('room', 'room__hotel')
 
-    def create(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
-        request.data['room'] = self.get_queryset().room_id
-        return super(ListCreateHotelReservationAPIView, self).create(request, *args, **kwargs)
+        request.data['room'] = room.id
+        return super(CreateHotelReservationAPIView, self).create(request, *args, **kwargs)
 
 
 class DetailHotelReservationAPIView(HotelMixin, generics.RetrieveUpdateDestroyAPIView):
-    queryset = HotelReservation.objects.filter(is_valid=True).all().select_related('hotel')
+    queryset = HotelReservation.objects.filter(reserved_status__in=[ReservedStatus.INITIAL, ReservedStatus.RESERVED],
+                                               is_valid=True).all()
     serializer_class = HotelReservationSerializer
     permission_classes = [IsOwner]
     lookup_field = 'reserved_key'
 
-    def get_queryset(self):
-        name = self.kwargs.get('name', None)
-        hotel = self.get_hotel(name)
-
-        room_number = self.kwargs.get('number', None)
-        room = self.get_room(room_number, hotel)
-        if self.request.method in SAFE_METHODS:
-            return HotelReservation.objects.filter(room=room, is_valid=True).get()
-        else:
-            return HotelReservation.objects.filter(room=room).get()
-
     def update(self, request, *args, **kwargs):
-
         request.data['user'] = request.user.id
-        request.data['room'] = self.get_queryset().room_id
+        try:
+            request.data['room'] = self.get_object().room_id
+        except Exception as e:
+            raise exceptions.ValidationError(
+                "Reservation record not found for this reserved key: {}".format(self.kwargs['reserved_key']))
         return super(DetailHotelReservationAPIView, self).update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
-        instance.is_valid = False
-        instance.save()
+        cancel_hotel_reservation(instance)
 
 
 # ---------------------------------------------PaymentReservation-------------------------------------------------------

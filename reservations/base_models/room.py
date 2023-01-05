@@ -2,6 +2,7 @@ from django.db import models
 
 
 class RoomStatus(models.TextChoices):
+    INITIAL = "INITIAL"
     FREE = "FREE"
     RESERVED = "RESERVED"
     PROBLEM = "PROBLEM"

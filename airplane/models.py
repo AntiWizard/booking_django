@@ -86,16 +86,17 @@ class AirplaneSeat(AbstractSeat):
 
 class AirplanePassenger(AbstractPassenger):
     seat = models.ForeignKey(AirplaneSeat, related_name='seat', on_delete=models.CASCADE)
+    transfer_status = models.CharField(max_length=20, choices=TransferStatus.choices, default=TransferStatus.INITIAL)
 
     def __str__(self):
         return "{}: {} - {} -> {}".format(self.seat.airplane.company.airport_terminal.airport.title
-                                          , self.seat.airplane.transport_number, self.seat.number, self.phone)
+                                          , self.seat.airplane.transport_number, self.seat.number, self.national_id)
 
     class Meta:
         constraints = [models.UniqueConstraint(
             condition=models.Q(
                 transfer_status__in=[TransferStatus.INITIAL, TransferStatus.RESERVED, TransferStatus.TRANSFER])
-            , fields=('seat', 'phone'), name='unique_seat_user')]
+            , fields=('seat', 'national_id'), name='unique_seat_user')]
 
 
 # ---------------------------------------------AirplaneReservation------------------------------------------------------

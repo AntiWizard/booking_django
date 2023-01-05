@@ -13,6 +13,13 @@ class TransferStatus(models.TextChoices):
     CANCELLED = 'CANCELLED'
 
 
+class StayStatus(models.TextChoices):
+    INITIAL = "INITIAL"
+    RESERVED = "RESERVED"
+    FINISHED = "FINISHED"
+    CANCELLED = "CANCELLED"
+
+
 class PassengerType(models.TextChoices):
     ADULT = "ADULT"
     CHILDREN = "CHILDREN"
@@ -31,7 +38,6 @@ class AbstractPassenger(models.Model):
     national_id = models.CharField(max_length=10)
     first_name = models.CharField(max_length=40)
     last_name = models.CharField(max_length=40)
-    transfer_status = models.CharField(max_length=20, choices=TransferStatus.choices, default=TransferStatus.INITIAL)
     passenger_type = models.CharField(max_length=20, choices=PassengerType.choices, default=PassengerType.ADULT)
 
     created_time = models.DateTimeField(auto_now_add=True)
@@ -43,3 +49,5 @@ class AbstractPassenger(models.Model):
     class Meta:
         ordering = ['-created_time']
         abstract = True
+
+
