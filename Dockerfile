@@ -16,7 +16,7 @@ COPY . /project
 RUN mkdir -p /var/log/gunicorn
 
 
-CMD ["python","manage.py","runserver","0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 #sudo docker run --name booking --env-file .env booking
 #sudo docker run --name reddis -p 6380:6379 redis
