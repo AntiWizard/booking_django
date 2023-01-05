@@ -1,10 +1,10 @@
 import psycopg2
 
-from fake_data.address import insert_airport_address, insert_hotel_address
-from fake_data.airplane import *
-from fake_data.currency import insert_currency
-from fake_data.hotel import insert_hotel, insert_room
-from fake_data.price import insert_price
+from address import insert_airport_address, insert_hotel_address
+from airplane import *
+from currency import insert_currency
+from hotel import insert_hotel, insert_room
+from price import insert_price
 
 
 def hotel():
