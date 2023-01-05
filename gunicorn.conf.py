@@ -1,4 +1,4 @@
-wsgi_app = '../../booking.wsgi.application'
+wsgi_app = 'booking.wsgi.application'
 loglevel = 'debug'
 workers = 2
 bind = '0.0.0.0:8000'
