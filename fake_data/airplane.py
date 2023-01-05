@@ -72,7 +72,7 @@ def insert_airplane(conn, ids, flag=True):
                 "INSERT INTO airplane_airplane(transport_number, description, max_reservation,"
                 " number_reserved, transfer_date, duration, transport_status, is_valid,"
                 " created_time, modified_time, pilot, company_id, destination_id, source_id)"
-                "VALUES (%s,%s,%s,%s,TIMESTAMP '2023-01-01 12:00:00',TIME '01:30:00',%s,TRUE,now(),now(), %s,%s,%s,%s)",
+                "VALUES (%s,%s,%s,%s,TIMESTAMP '2023-01-21 12:00:00',TIME '01:30:00',%s,TRUE,now(),now(), %s,%s,%s,%s)",
                 d)
 
         print("ADD airplane")
