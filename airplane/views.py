@@ -51,7 +51,25 @@ class ListAirplaneAPIView(generics.ListAPIView):
     serializer_class = AirplaneSerializer
     permission_classes = [AllowAny]
     filter_backends = (filters.SearchFilter,)
-    search_fields = ['source', 'destination', 'transport_status', 'transfer_date']
+    search_fields = ['transport_status', 'transfer_date']
+
+    def get_queryset(self):
+        source = self.request.query_params.get('source', None)
+        destination = self.request.query_params.get('destination', None)
+        count = self.request.query_params.get('count', None)
+        query = super(ListAirplaneAPIView, self).get_queryset()
+
+        if source and destination:
+            source_country = Airport.objects.filter(address__city__icontains=source).all()
+            destination_country = Airport.objects.filter(address__city__icontains=destination).all()
+            query = query.filter(source_id__in=source_country, destination_id__in=destination_country)
+        if count:
+            query = query.annotate(reserv=models.F('max_reservation') - models.F('number_reserved')) \
+                .filter(reserv__gte=count)
+
+        if not query:
+            raise exceptions.ValidationError("Not found any airplane with this searching!")
+        return query
 
 
 class DetailAirplaneAPIView(generics.RetrieveAPIView):

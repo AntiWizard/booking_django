@@ -46,6 +46,20 @@ class ListCreateHotelAPIView(HotelMixin, generics.ListCreateAPIView):
     filter_backends = (filters.SearchFilter,)
     search_fields = ['star', 'name', 'residence_status']
 
+    def get_queryset(self):
+        city = self.request.query_params.get('city', None)
+        country = self.request.query_params.get('country', None)
+        query = super(ListCreateHotelAPIView, self).get_queryset()
+
+        if city or country:
+            if country:
+                query = query.filter(address__country__icontains=country)
+            if city:
+                query = query.filter(address__city__icontains=city)
+        if not query:
+            raise exceptions.ValidationError("Not found any hotel with this searching!")
+        return query
+
     def get_permissions(self):
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
