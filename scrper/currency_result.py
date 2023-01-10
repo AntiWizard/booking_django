@@ -1,5 +1,6 @@
 import json
 
+import mpu
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -33,3 +34,13 @@ if data:
     if json_format['success']:
         for key, value in json_format.items():
             print(key, value)
+    list_name_of_code = []
+    list_code_not_found = []
+    for item in json_format['rates'].keys():
+        try:
+            list_name_of_code.append(mpu.units.get_currency(item))
+        except Exception as e:
+            list_code_not_found.append((item, {"error": e}))
+
+    print(list_name_of_code)
+    print(list_code_not_found)
