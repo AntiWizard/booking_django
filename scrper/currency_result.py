@@ -3,6 +3,7 @@ import json
 import mpu
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -17,7 +18,7 @@ def main():
     url = 'https://api.exchangerate.host/latest'
     params = "?base=USD"
 
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.get(url + params)
 
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.TAG_NAME, 'pre')))
